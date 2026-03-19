@@ -856,6 +856,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div class="map-btn-group" id="trMapBtnGroup" style="display:none;">
       <button class="map-view-btn" id="trMapViewBtn" onclick="toggleMapView('trk')">🛰 Satellite</button>
       <button class="map-view-btn mvb-on" id="trLabelsBtn" onclick="toggleLabels('trk')">🏷 Labels</button>
+      <button class="map-view-btn mvb-on" id="trOceanBtn" onclick="toggleOcean('trk')">🌊 Ocean</button>
     </div>
   </div>
 </div>
@@ -895,6 +896,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div class="map-btn-group" id="wptMapBtnGroup">
       <button class="map-view-btn" id="wptMapViewBtn" onclick="toggleMapView('wpt')">🛰 Satellite</button>
       <button class="map-view-btn mvb-on" id="wptLabelsBtn" onclick="toggleLabels('wpt')">🏷 Labels</button>
+      <button class="map-view-btn" id="wptOceanBtn" style="display:none;" title="Ocean labels not available on Google Maps embed">🌊 Ocean</button>
     </div>
     <div id="mapLinks" style="display:none;position:absolute;bottom:14px;right:12px;z-index:10;"></div>
   </div>
@@ -2697,7 +2699,17 @@ function toggleMapView(which) {
   if(which === 'trk') trSetTileLayer(mapView === 'satellite');
 }
 
-let labelsOn = true; // labels on by default
+let labelsOn = true;  // places/boundaries labels on by default
+let oceanOn  = true;  // ocean/reef labels on by default
+
+function toggleOcean(which) {
+  oceanOn = !oceanOn;
+  ['trOceanBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.classList.toggle('mvb-on', oceanOn);
+  });
+  if(which === 'trk') trSetTileLayer(mapView === 'satellite');
+}
 
 function toggleLabels(which) {
   labelsOn = !labelsOn;
@@ -2886,7 +2898,8 @@ let _trLayers = [];        // current polyline layers
 let _trTileLayer  = null;  // current base tile layer
 let _trSatLayer   = null;  // Esri satellite
 let _trOsmLayer   = null;  // OSM standard (with labels)
-let _trLabelLayer = null;  // Esri label overlay (for satellite mode)
+let _trLabelLayer = null;  // Esri places/boundaries label overlay
+let _trOceanLayer = null;  // Esri ocean reference (reef names etc)
 let _trOsmNlLayer = null;  // CARTO no-labels (for terrain no-labels)
 
 const TR_OSM_URL   = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -2895,6 +2908,8 @@ const TR_SAT_URL   = 'https://server.arcgisonline.com/ArcGIS/rest/services/World
 const TR_SAT_ATTR  = '© <a href="https://www.esri.com">Esri</a> World Imagery';
 const TR_LBL_URL   = 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
 const TR_LBL_ATTR  = '© <a href="https://www.esri.com">Esri</a>';
+const TR_OCN_URL   = 'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}';
+const TR_OCN_ATTR  = '© <a href="https://www.esri.com">Esri</a>, GEBCO, NOAA, National Geographic';
 const TR_OSM_NL_URL = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
 const TR_OSM_NL_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>';
 
@@ -2905,11 +2920,13 @@ function trInitMap() {
   _trMap = L.map('trLeafletMap', { zoomControl: true, attributionControl: true });
   _trOsmLayer   = L.tileLayer(TR_OSM_URL,    { attribution: TR_OSM_ATTR,  maxZoom: 19 });
   _trSatLayer   = L.tileLayer(TR_SAT_URL,    { attribution: TR_SAT_ATTR,  maxZoom: 19 });
-  _trLabelLayer = L.tileLayer(TR_LBL_URL,    { attribution: TR_LBL_ATTR,  maxZoom: 19, pane: 'overlayPane' });
+  _trLabelLayer = L.tileLayer(TR_LBL_URL, { attribution: TR_LBL_ATTR, maxZoom: 19, pane: 'overlayPane' });
+  _trOceanLayer = L.tileLayer(TR_OCN_URL, { attribution: TR_OCN_ATTR, maxZoom: 19, pane: 'overlayPane', opacity: 0.9 });
   _trOsmNlLayer = L.tileLayer(TR_OSM_NL_URL, { attribution: TR_OSM_NL_ATTR, maxZoom: 19 });
   _trTileLayer  = (mapView === 'satellite' ? _trSatLayer : _trOsmLayer);
   _trTileLayer.addTo(_trMap);
   if(labelsOn && mapView === 'satellite') _trLabelLayer.addTo(_trMap);
+  if(oceanOn)  _trOceanLayer.addTo(_trMap);
 }
 
 function trSetTileLayer(sat) {
@@ -2918,14 +2935,16 @@ function trSetTileLayer(sat) {
   if (_trTileLayer) _trMap.removeLayer(_trTileLayer);
   // Remove label overlay
   if (_trLabelLayer && _trMap.hasLayer(_trLabelLayer)) _trMap.removeLayer(_trLabelLayer);
+  if (_trOceanLayer  && _trMap.hasLayer(_trOceanLayer))  _trMap.removeLayer(_trOceanLayer);
   if (_trOsmNlLayer && _trMap.hasLayer(_trOsmNlLayer)) _trMap.removeLayer(_trOsmNlLayer);
 
   if (sat) {
     // Satellite base
     _trSatLayer.addTo(_trMap);
     _trTileLayer = _trSatLayer;
-    // Label overlay on top
+    // Label overlays on top
     if (labelsOn) _trLabelLayer.addTo(_trMap);
+    if (oceanOn)  _trOceanLayer.addTo(_trMap);
   } else {
     // Terrain/OSM — use label or no-label variant
     if (labelsOn) {
@@ -2935,6 +2954,8 @@ function trSetTileLayer(sat) {
       _trOsmNlLayer.addTo(_trMap);  // CARTO no-labels
       _trTileLayer = _trOsmNlLayer;
     }
+    // Ocean reference layer works on top of terrain too
+    if (oceanOn && _trOceanLayer) _trOceanLayer.addTo(_trMap);
   }
 }
 
