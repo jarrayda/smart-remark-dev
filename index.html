@@ -466,7 +466,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .vtag{position:fixed;bottom:10px;right:14px;font-size:.62rem;font-weight:700;color:rgba(26,95,138,0.45);letter-spacing:0.08em;z-index:50;pointer-events:none;font-family:ui-monospace,'SF Mono','Cascadia Code','Consolas','Menlo',monospace;background:rgba(255,255,255,0.6);padding:2px 7px;border-radius:10px;}
 
 /* ── MAP VIEW TOGGLE ── */
-.map-btn-group{position:absolute;top:10px;right:10px;z-index:20;display:flex;gap:4px;}
+.map-btn-group{position:absolute;top:10px;right:10px;z-index:1001;display:flex;gap:4px;}
 .map-view-btn{background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);transition:all .14s;white-space:nowrap;line-height:1.3;}
 .map-view-btn:hover{background:#fff;}
 .map-view-btn.mvb-on{background:var(--accent);color:#fff;border-color:var(--accent);}
@@ -489,8 +489,8 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .tb-btn-cancel:hover{background:var(--border);color:var(--text);}
 .tb-btn-save{background:var(--green);color:#fff;border:1.5px solid var(--green);}
 .tb-btn-save:hover{opacity:.88;}
-#trLassoCanvas{position:absolute;inset:0;z-index:1000;cursor:crosshair;display:none;}
-#trLassoCanvas.active{display:block;}
+#trLassoCanvas{position:absolute;inset:0;z-index:1000;cursor:crosshair;display:none;pointer-events:none;}
+#trLassoCanvas.active{display:block;pointer-events:auto;}
 
 /* ── TRACK DROP ZONE ── */
 .tr-dz{border:2px dashed var(--border2);border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;transition:all .15s;color:var(--muted);font-size:.78rem;margin-bottom:6px;}
@@ -519,8 +519,8 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .tb-btn-cancel:hover{background:var(--border);color:var(--text);}
 .tb-btn-save{background:var(--green);color:#fff;border:1.5px solid var(--green);}
 .tb-btn-save:hover{opacity:.88;}
-#trLassoCanvas{position:absolute;inset:0;z-index:1000;cursor:crosshair;display:none;}
-#trLassoCanvas.active{display:block;}
+#trLassoCanvas{position:absolute;inset:0;z-index:1000;cursor:crosshair;display:none;pointer-events:none;}
+#trLassoCanvas.active{display:block;pointer-events:auto;}
 
 /* ── TRACK DROP ZONE ── */
 /* ── MODE TOGGLE ── */
@@ -1321,14 +1321,15 @@ function _showMap(pts){
 function applyMapZoom(){
   if(!_mapPts||!_mapPts.length)return;
   const iframe=document.getElementById('mapIframe');
+  const t=mapView==='satellite'?(labelsOn?'h':'s'):(labelsOn?'m':'p');
   if(_mapPts.length===1){
     const p=_mapPts[0];
-    iframe.src=`https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=h&output=embed`;
+    iframe.src=`https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=${t}&output=embed`;
   } else {
     const lats=_mapPts.map(p=>p.lat),lons=_mapPts.map(p=>p.lon);
     const cLat=((Math.min(...lats)+Math.max(...lats))/2).toFixed(6);
     const cLon=((Math.min(...lons)+Math.max(...lons))/2).toFixed(6);
-    iframe.src=`https://maps.google.com/maps?q=${cLat},${cLon}&z=${_mapZoom}&t=h&output=embed`;
+    iframe.src=`https://maps.google.com/maps?q=${cLat},${cLon}&z=${_mapZoom}&t=${t}&output=embed`;
   }
 }
 document.getElementById('zoomIn').addEventListener('click',()=>{
@@ -2213,30 +2214,35 @@ function loadFile(file){
     // Small defer so the overlay renders before heavy parsing begins
     setTimeout(()=>{
       const raw=parseFile(file.name,e.target.result);
-      if(!raw.length){hideLoader();toast('No marks found in '+file.name,'r');return;}
       const fmt=(raw[0]?.sf||'dd').toUpperCase();
       const skipped=raw._skipped||0;
       const newWP=finalize(raw);
       // ACCUMULATE — add to existing waypoints
       WP=[...WP,...newWP];
       selIds.clear();
+
+      // Parse tracks from GPX (do this before the waypoint-only bail-out check)
+      let newTrackCount = 0;
+      if(file.name.toLowerCase().endsWith('.gpx')){
+        const newTracks = trParseGPX(e.target.result, file.name.replace(/\.gpx$/i,''));
+        if(newTracks.length){
+          newTrackCount = newTracks.length;
+          TRACKS.push(...newTracks);
+          TRACKS.filter(t=>!t.binned).forEach((t,i)=>t.color=TR_COLORS[i%TR_COLORS.length]);
+        }
+      }
+
+      // If no waypoints AND no tracks, nothing useful was found
+      if(!raw.length && !newTrackCount){hideLoader();toast('No marks or tracks found in '+file.name,'r');return;}
+
       loadedFileMeta.push({name:file.name,count:raw.length,fmt,skipped});
       document.getElementById('uploadSec').style.display='none';
       document.getElementById('loadedSec').style.display='block';
       renderFileChips();
       renderAll();badges();
 
-      showLoader('Analysing ' + raw.length + ' marks…');
-      // Short breath — let the updated message render, then run analysis
+      showLoader('Analysing ' + (raw.length||newTrackCount) + (raw.length?(' marks'):(' tracks')) + '…');
       setTimeout(()=>{
-        // Parse tracks first so TRACKS.length is correct when showAnalysisSummary fires
-        if(file.name.toLowerCase().endsWith('.gpx')){
-          const newTracks = trParseGPX(e.target.result, file.name.replace(/\.gpx$/i,''));
-          if(newTracks.length){
-            TRACKS.push(...newTracks);
-            TRACKS.filter(t=>!t.binned).forEach((t,i)=>t.color=TR_COLORS[i%TR_COLORS.length]);
-          }
-        }
         analyse();
         if(appMode==='track') trRender();
         hideLoader();
