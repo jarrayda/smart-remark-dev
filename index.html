@@ -1680,7 +1680,7 @@ function reanalyseSameNames(){
 }
 
 // ─── ANALYSIS ────────────────────────────────────────
-function analyse(){
+function analyse(silent=false){
   const thr=parseFloat(document.getElementById('thresh').value);
   WP.forEach(w=>{w.status='ok';w.note='';w.keepInGroup=false;w.snFlag=false;});
   EG=[];NG=[];SN=[];
@@ -1733,11 +1733,12 @@ function analyse(){
 
   badges(); renderAll(); renderExact(); renderNear(); renderSameName(); buildClean();
   analysed=true;
-  showAnalysisSummary(ex, nr, SN.length, tot, CS.length, TRACKS.length);
+  showAnalysisSummary(ex, nr, SN.length, tot, CS.length, TRACKS.length, silent);
 }
 
 // ─── ANALYSIS SUMMARY MODAL ──────────────────────────
-function showAnalysisSummary(ex, nr, sn, total, clean, tracks){
+function showAnalysisSummary(ex, nr, sn, total, clean, tracks, silent=false){
+  if (silent) return;
   const rows=document.getElementById('summaryRows');
   const hint=document.getElementById('summaryHint');
   const title=document.getElementById('summaryTitle');
@@ -3733,7 +3734,7 @@ function _awSave() {
   renderFileChips();
 
   _awClose();
-  analyse();
+  analyse(true);  // silent — no summary popup for manual adds
   selIds.add(newWpt.id);
   showMap([newWpt]);
   toast(`✓ "${name}" added`, 'g');
