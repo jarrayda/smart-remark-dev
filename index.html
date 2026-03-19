@@ -3600,26 +3600,29 @@ function _awClose() {
 
 // ── Map pick mode ──
 function _awPickStart() {
-  // Close modal, enter pick mode
+  // Close popover first
   document.getElementById('addWptPopover').classList.remove('open');
   const wrap   = document.getElementById('mapZoomWrap');
   const banner = document.getElementById('mapPickBanner');
   if (wrap)   wrap.classList.add('pick-mode');
   if (banner) banner.style.display = 'block';
-  // One-shot click listener on the wrapper (not the blocking overlay)
-  wrap._awPickHandler = function(e) {
-    const rect   = wrap.getBoundingClientRect();
-    const iframe = document.getElementById('mapIframe');
-    const iRect  = iframe ? iframe.getBoundingClientRect() : rect;
-    const coords = _awPixelToLatLon(
-      e.clientX - iRect.left, e.clientY - iRect.top,
-      iRect.width, iRect.height
-    );
-    _awPickCancel();
-    _awShowStep2(coords ? coords.lat : null, coords ? coords.lon : null);
-    document.getElementById('addWptPopover').classList.add('open');
-  };
-  wrap.addEventListener('click', wrap._awPickHandler, { once: true });
+  // Defer listener so the button click that triggered this doesn't immediately fire it
+  setTimeout(() => {
+    if (!wrap) return;
+    wrap._awPickHandler = function(e) {
+      const rect   = wrap.getBoundingClientRect();
+      const iframe = document.getElementById('mapIframe');
+      const iRect  = iframe ? iframe.getBoundingClientRect() : rect;
+      const coords = _awPixelToLatLon(
+        e.clientX - iRect.left, e.clientY - iRect.top,
+        iRect.width, iRect.height
+      );
+      _awPickCancel();
+      _awShowStep2(coords ? coords.lat : null, coords ? coords.lon : null);
+      document.getElementById('addWptPopover').classList.add('open');
+    };
+    wrap.addEventListener('click', wrap._awPickHandler, { once: true });
+  }, 50);
 }
 
 function _awPickCancel() {
@@ -3681,10 +3684,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Cancel
   document.getElementById('addWptCancel')?.addEventListener('click', _awClose);
   document.getElementById('addWptCancelStep2')?.addEventListener('click', _awClose);
-  // Close popover on outside click
+  // Close popover on outside click (but not during pick mode)
   document.addEventListener('click', e => {
     const pop = document.getElementById('addWptPopover');
     const fab = document.getElementById('addWptFab');
+    const wrap = document.getElementById('mapZoomWrap');
+    if (wrap && wrap.classList.contains('pick-mode')) return; // let pick handler deal with it
     if (pop && pop.classList.contains('open') && !pop.contains(e.target) && e.target !== fab) _awClose();
   });
 
