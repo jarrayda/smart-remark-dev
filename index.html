@@ -515,6 +515,9 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .tr-legend-item{display:flex;align-items:center;gap:5px;font-weight:600;}
 .tr-legend-sw{width:22px;height:4px;border-radius:2px;}
 </style>
+  <!-- Leaflet for track map -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 <header>
@@ -790,8 +793,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <p style="font-weight:700;color:rgba(255,255,255,0.55);margin:4px 0 2px">Select a track to preview</p>
       <p style="font-size:.71rem;margin:0">Select multiple to compare</p>
     </div>
-    <iframe id="trMapIframe" style="position:absolute;inset:0;width:100%;height:100%;border:none;display:none;" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
-    <canvas id="trCanvas" style="position:absolute;inset:0;width:100%;height:100%;display:none;"></canvas>
+    <div id="trLeafletMap" style="position:absolute;inset:0;width:100%;height:100%;display:none;"></div>
     <button class="map-view-btn" id="trMapViewBtn" onclick="toggleMapView('trk')" style="display:none;">🛰 Satellite</button>
   </div>
 </div>
@@ -2607,7 +2609,7 @@ function toggleMapView(which) {
   if(tb) tb.textContent = label;
   // Refresh whichever map is visible
   if(which === 'wpt' && _mapPts && _mapPts.length) _showMap(_mapPts);
-  if(which === 'trk') trDrawMap(TRACKS.filter(t => !t.binned && t.selected));
+  if(which === 'trk') trSetTileLayer(mapView === 'satellite');
 }
 
 let TRACKS = [];
@@ -2626,7 +2628,7 @@ function setMode(m) {
   if(mapPanel) mapPanel.style.display = isTrack ? 'none' : '';
   const tp = document.getElementById('trackPanel');
   tp.classList.toggle('tp-on', isTrack);
-  if (isTrack) trRender();
+  if (isTrack) { trRender(); setTimeout(()=>{ if(_trMap) _trMap.invalidateSize(); }, 150); }
 }
 
 function trParseGPX(txt, fn) {
@@ -2720,7 +2722,7 @@ function trRender() {
     if (spanStr) metaParts.push(spanStr);
     const meta = metaParts.join(' · ');
     return `
-    <div class="tr-row${t.selected ? ' tr-sel' : ''}${t.binned ? ' tr-binned' : ''}" onclick="trToggle('${t.id}',${!t.selected})">
+    <div class="tr-row${t.selected ? ' tr-sel' : ''}${t.binned ? ' tr-binned' : ''}" onclick="trSelectOnly('${t.id}')">
       <input type="checkbox" class="tr-cb" ${t.selected ? 'checked' : ''} onclick="event.stopPropagation();trToggle('${t.id}',this.checked)">
       <span class="tr-swatch" style="background:${t.color}"></span>
       <div class="tr-info">
@@ -2740,6 +2742,15 @@ function trRender() {
 function trToggle(id, sel) {
   const t = TRACKS.find(x => x.id == id);
   if (t) { t.selected = sel; trRender(); }
+}
+
+// Row click = exclusively select this one track (deselect all others)
+function trSelectOnly(id) {
+  const already = TRACKS.filter(t => t.selected).length === 1 && TRACKS.find(t => t.id == id)?.selected;
+  TRACKS.forEach(t => t.selected = false);
+  const t = TRACKS.find(x => x.id == id);
+  if (t && !already) t.selected = true;
+  trRender();
 }
 
 function trSelectAll(v) {
@@ -2769,98 +2780,108 @@ function trDeleteSelected() {
   trRender();
 }
 
+/* ── Leaflet track map ── */
+let _trMap = null;         // Leaflet map instance
+let _trLayers = [];        // current polyline layers
+let _trTileLayer = null;   // current tile layer
+let _trSatLayer = null;    // satellite tile layer ref
+let _trOsmLayer = null;    // OSM tile layer ref
+
+const TR_OSM_URL   = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TR_OSM_ATTR  = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const TR_SAT_URL   = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const TR_SAT_ATTR  = '© <a href="https://www.esri.com">Esri</a> World Imagery';
+
+function trInitMap() {
+  if (_trMap) return;
+  const el = document.getElementById('trLeafletMap');
+  if (!el) return;
+  _trMap = L.map('trLeafletMap', { zoomControl: true, attributionControl: true });
+  _trOsmLayer = L.tileLayer(TR_OSM_URL, { attribution: TR_OSM_ATTR, maxZoom: 19 });
+  _trSatLayer = L.tileLayer(TR_SAT_URL, { attribution: TR_SAT_ATTR, maxZoom: 19 });
+  // Start with current mapView setting
+  _trTileLayer = (mapView === 'satellite' ? _trSatLayer : _trOsmLayer);
+  _trTileLayer.addTo(_trMap);
+}
+
+function trSetTileLayer(sat) {
+  if (!_trMap) return;
+  if (sat && _trTileLayer !== _trSatLayer) {
+    _trMap.removeLayer(_trTileLayer);
+    _trSatLayer.addTo(_trMap);
+    _trTileLayer = _trSatLayer;
+  } else if (!sat && _trTileLayer !== _trOsmLayer) {
+    _trMap.removeLayer(_trTileLayer);
+    _trOsmLayer.addTo(_trMap);
+    _trTileLayer = _trOsmLayer;
+  }
+}
+
 function trDrawMap(tracks) {
-  const canvas = document.getElementById('trCanvas');
+  const mapEl = document.getElementById('trLeafletMap');
   const empty = document.getElementById('trMapEmpty');
-  const iframe = document.getElementById('trMapIframe');
-  const viewBtn = document.getElementById('trMapViewBtn');
+
   if (!tracks.length) {
-    canvas.style.display = 'none';
-    if(iframe) iframe.style.display = 'none';
-    if(viewBtn) viewBtn.style.display = 'none';
+    if(mapEl) mapEl.style.display = 'none';
+    const vb = document.getElementById('trMapViewBtn');
+    if(vb) vb.style.display = 'none';
     empty.style.display = 'flex';
     return;
   }
-  empty.style.display = 'none';
-  canvas.style.display = 'block';
-  if(viewBtn) viewBtn.style.display = 'block';
-  // Show Google Maps iframe as background layer
-  if(iframe) {
-    const allPts = tracks.flatMap(t => t.pts);
-    if(allPts.length) {
-      const cLat = ((Math.min(...allPts.map(p=>p.lat)) + Math.max(...allPts.map(p=>p.lat))) / 2).toFixed(6);
-      const cLon = ((Math.min(...allPts.map(p=>p.lon)) + Math.max(...allPts.map(p=>p.lon))) / 2).toFixed(6);
-      const t = mapView === 'satellite' ? 'h' : 'm';
-      iframe.src = `https://maps.google.com/maps?q=${cLat},${cLon}&z=11&t=${t}&output=embed`;
-      iframe.style.display = 'block';
-      // Redraw canvas after a tick so it layers on top of iframe
-      setTimeout(() => trDrawCanvas(tracks), 150);
-    }
-  }
-  trDrawCanvas(tracks);
-}
 
-function trDrawCanvas(tracks) {
-  const canvas = document.getElementById('trCanvas');
-  if(!canvas || !tracks.length) return;
-  const area = document.getElementById('trMapArea');
-  canvas.width = area.clientWidth;
-  canvas.height = area.clientHeight;
-  const W = canvas.width, H = canvas.height;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, W, H);
-  // Dark fill only when no iframe background (offline fallback)
-  const hasBg = document.getElementById('trMapIframe')?.style.display === 'block';
-  if(!hasBg) {
-    ctx.fillStyle = '#1a2a3a'; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
-    for (let i = 1; i < 5; i++) {
-      const y = H * i / 5; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-      const x = W * i / 5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-    }
-  }
-  // Mercator projection helpers
-  // latToMerc: converts latitude to Mercator Y (Web Mercator style)
-  const latToMerc = lat => {
-    const r = lat * Math.PI / 180;
-    return Math.log(Math.tan(Math.PI / 4 + r / 2));
-  };
-  // bounding box in Mercator space
-  let minLon = Infinity, maxLon = -Infinity, minMerc = Infinity, maxMerc = -Infinity;
-  tracks.forEach(t => t.pts.forEach(p => {
-    if (p.lon < minLon) minLon = p.lon; if (p.lon > maxLon) maxLon = p.lon;
-    const m = latToMerc(p.lat);
-    if (m < minMerc) minMerc = m; if (m > maxMerc) maxMerc = m;
-  }));
-  const pad = 40;
-  const scX = (W - pad*2) / (maxLon - minLon || 0.001);
-  const scY = (H - pad*2) / (maxMerc - minMerc || 0.001);
-  const sc = Math.min(scX, scY);
-  const oX = (W - (maxLon - minLon) * sc) / 2;
-  const oY = (H - (maxMerc - minMerc) * sc) / 2;
-  // Project: lon → canvas X, lat → Mercator → canvas Y
-  const tx = lon => oX + (lon - minLon) * sc;
-  const ty = lat => oY + (maxMerc - latToMerc(lat)) * sc;
+  empty.style.display = 'none';
+  mapEl.style.display = 'block';
+  const viewBtn = document.getElementById('trMapViewBtn');
+  if(viewBtn) viewBtn.style.display = 'block';
+
+  // Init Leaflet on first use
+  trInitMap();
+
+  // Remove old polyline layers
+  _trLayers.forEach(l => _trMap.removeLayer(l));
+  _trLayers = [];
+
+  const bounds = [];
+
   tracks.forEach(t => {
     if (!t.pts.length) return;
-    const hasTile = document.getElementById('trMapIframe')?.style.display === 'block';
-    // shadow
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = hasTile ? 6 : 4; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    ctx.beginPath(); t.pts.forEach((p, i) => i ? ctx.lineTo(tx(p.lon), ty(p.lat)) : ctx.moveTo(tx(p.lon), ty(p.lat))); ctx.stroke();
-    // line
-    ctx.strokeStyle = t.color; ctx.lineWidth = hasTile ? 3.5 : 2.5;
-    ctx.beginPath(); t.pts.forEach((p, i) => i ? ctx.lineTo(tx(p.lon), ty(p.lat)) : ctx.moveTo(tx(p.lon), ty(p.lat))); ctx.stroke();
-    // start dot (green)
-    const s = t.pts[0];
-    ctx.beginPath(); ctx.arc(tx(s.lon), ty(s.lat), 5, 0, Math.PI*2); ctx.fillStyle = '#4ade80'; ctx.fill();
-    // end dot (red)
-    const e = t.pts[t.pts.length - 1];
-    ctx.beginPath(); ctx.arc(tx(e.lon), ty(e.lat), 5, 0, Math.PI*2); ctx.fillStyle = '#f87171'; ctx.fill();
-    // label
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui,sans-serif'; ctx.globalAlpha = 0.85;
-    ctx.fillText(t.name, tx(s.lon) + 8, ty(s.lat) - 7);
-    ctx.globalAlpha = 1;
+    const latlngs = t.pts.map(p => [p.lat, p.lon]);
+    bounds.push(...latlngs);
+
+    // Track polyline
+    const poly = L.polyline(latlngs, {
+      color: t.color,
+      weight: 4,
+      opacity: 0.9,
+      lineJoin: 'round',
+      lineCap: 'round'
+    }).addTo(_trMap);
+    poly.bindTooltip(esc(t.name), { sticky: true, opacity: 0.9 });
+    _trLayers.push(poly);
+
+    // Start marker (green circle)
+    const startCircle = L.circleMarker([t.pts[0].lat, t.pts[0].lon], {
+      radius: 7, color: '#fff', weight: 2, fillColor: '#4ade80', fillOpacity: 1
+    }).addTo(_trMap);
+    startCircle.bindTooltip('Start: ' + esc(t.name), { opacity: 0.9 });
+    _trLayers.push(startCircle);
+
+    // End marker (red circle)
+    const end = t.pts[t.pts.length - 1];
+    const endCircle = L.circleMarker([end.lat, end.lon], {
+      radius: 7, color: '#fff', weight: 2, fillColor: '#f87171', fillOpacity: 1
+    }).addTo(_trMap);
+    endCircle.bindTooltip('End: ' + esc(t.name), { opacity: 0.9 });
+    _trLayers.push(endCircle);
   });
+
+  // Fit map to all tracks
+  if (bounds.length) {
+    _trMap.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
+  }
+
+  // Invalidate size in case container was hidden when initialised
+  setTimeout(() => _trMap && _trMap.invalidateSize(), 100);
 }
 
 function buildTrackGPX(tracks, creator) {
