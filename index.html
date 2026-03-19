@@ -869,7 +869,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         </svg>
       </div>
       <div>
-        <h2>Welcome to Smart Re-Mark <span style="font-size:.75rem;font-weight:600;opacity:.7;letter-spacing:.02em;">v2.1</span></h2>
+        <h2>Welcome to Smart Re-Mark <span style="font-size:.75rem;font-weight:600;opacity:.7;letter-spacing:.02em;">v2.2</span></h2>
         <p>GPS Waypoint Deduplicator, Cleaner &amp; Format Converter</p>
       </div>
     </div>
@@ -960,9 +960,28 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 
       <div class="rn-version">
         <div class="rn-vtag">
-          <span class="rn-vnum">v2.1</span>
+          <span class="rn-vnum">v2.2</span>
           <span class="rn-vdate">Mar 2026</span>
           <span class="rn-vbadge rn-latest">Latest</span>
+        </div>
+        <ul>
+          <li>Track Mode — load GPX files containing both waypoints and tracks; manage each independently</li>
+          <li>Waypoint &amp; Track toggle in header — switch between modes, each with its own sidebar and map</li>
+          <li>Track list shows distance, date/time span (AEST), keep/remove buttons per track</li>
+          <li>Track map uses Web Mercator projection for accurate alignment with satellite/terrain tiles</li>
+          <li>Satellite / Terrain map toggle on both waypoint and track maps</li>
+          <li>Track export modal — name your file, get a BinnedTracks backup automatically</li>
+          <li>Same-name conflict resolution deferred to export — no mid-session purge required</li>
+          <li>Date column (AEST) added to all waypoint tabs</li>
+          <li>Unified export — one GPX containing kept waypoints and kept tracks plus binned backup</li>
+        </ul>
+      </div>
+
+      <div class="rn-version">
+        <div class="rn-vtag">
+          <span class="rn-vnum">v2.1</span>
+          <span class="rn-vdate">Mar 2026</span>
+          <span class="rn-vbadge"></span>
         </div>
         <ul>
           <li>Mobile-friendly layout — all modals become bottom sheets on small screens, tabs scroll horizontally, tables resize gracefully</li>
@@ -2524,7 +2543,7 @@ document.getElementById('expBtn').addEventListener('click',()=>openExportModal()
   </div>
   <div class="load-msg" id="loadMsg">Reading file…</div>
 </div>
-<div class="vtag">v2.1 · 🔒 Offline Safety</div>
+<div class="vtag">v2.2 · 🔒 Offline Safety</div>
 
 <script>
 // ─── SERVICE WORKER (offline support) ────────────────
@@ -2684,7 +2703,7 @@ function trRender() {
   html += visible.map(t => {
     // Convert UTC date to AEST (UTC+10) for display only — export keeps original UTC
     const toAEST = d => new Date(d.getTime() + 10 * 60 * 60 * 1000);
-    const fmtDate = d => toAEST(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'2-digit',timeZone:'UTC'});
+    const fmtDate = d => toAEST(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
     const fmtTime = d => toAEST(d).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'UTC'});
     let spanStr = '';
     if (t.earliestDate && t.latestDate) {
@@ -2697,7 +2716,7 @@ function trRender() {
     } else if (t.earliestDate) {
       spanStr = fmtDate(t.earliestDate);
     }
-    const metaParts = [t.pts.length.toLocaleString() + ' pts', (t.dist/1000).toFixed(2) + ' km'];
+    const metaParts = [(t.dist/1000).toFixed(2) + ' km'];
     if (spanStr) metaParts.push(spanStr);
     const meta = metaParts.join(' · ');
     return `
