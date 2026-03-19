@@ -469,6 +469,27 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .map-view-btn{position:absolute;top:10px;right:10px;z-index:20;background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);transition:background .14s;white-space:nowrap;line-height:1.3;}
 .map-view-btn:hover{background:#fff;}
 
+/* ── TRACK EDIT TOOLBAR (in-sidebar) ── */
+#trEditBar{display:none;flex-direction:column;gap:0;flex-shrink:0;border-bottom:1px solid var(--border);}
+#trEditBar.open{display:flex;}
+.tr-edit-hdr{padding:9px 12px;background:#1a2535;display:flex;align-items:center;gap:8px;}
+.tr-edit-hdr .eb-title{font-weight:800;font-size:.82rem;color:#fff;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tr-edit-actions{padding:8px 10px;background:var(--card);display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.tr-edit-meta{padding:4px 12px 6px;font-size:.69rem;color:var(--muted);background:var(--card);border-top:1px solid var(--border);}
+.tb-btn{padding:5px 11px;border-radius:5px;font-size:.68rem;font-weight:700;cursor:pointer;border:none;transition:all .14s;white-space:nowrap;}
+.tb-btn-del{background:rgba(239,68,68,.1);color:var(--red);border:1.5px solid rgba(239,68,68,.3);}
+.tb-btn-del:hover:not(:disabled){background:var(--red);color:#fff;border-color:var(--red);}
+.tb-btn-del:disabled{opacity:.35;cursor:not-allowed;}
+.tb-btn-undo{background:var(--card);color:var(--text2);border:1.5px solid var(--border2);}
+.tb-btn-undo:hover:not(:disabled){background:var(--border);color:var(--text);}
+.tb-btn-undo:disabled{opacity:.35;cursor:not-allowed;}
+.tb-btn-cancel{background:var(--card);color:var(--text2);border:1.5px solid var(--border2);}
+.tb-btn-cancel:hover{background:var(--border);color:var(--text);}
+.tb-btn-save{background:var(--green);color:#fff;border:1.5px solid var(--green);}
+.tb-btn-save:hover{opacity:.88;}
+#trLassoCanvas{position:absolute;inset:0;z-index:1000;cursor:crosshair;display:none;}
+#trLassoCanvas.active{display:block;}
+
 /* ── TRACK DROP ZONE ── */
 .tr-dz{border:2px dashed var(--border2);border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;transition:all .15s;color:var(--muted);font-size:.78rem;margin-bottom:6px;}
 .tr-dz:hover,.tr-dz.over{border-color:var(--accent);background:var(--accent-lt);color:var(--accent);}
@@ -478,6 +499,27 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 /* ── MAP VIEW TOGGLE ── */
 .map-view-btn{position:absolute;top:10px;right:10px;z-index:20;background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);transition:background .14s;white-space:nowrap;line-height:1.3;}
 .map-view-btn:hover{background:#fff;}
+
+/* ── TRACK EDIT TOOLBAR (in-sidebar) ── */
+#trEditBar{display:none;flex-direction:column;gap:0;flex-shrink:0;border-bottom:1px solid var(--border);}
+#trEditBar.open{display:flex;}
+.tr-edit-hdr{padding:9px 12px;background:#1a2535;display:flex;align-items:center;gap:8px;}
+.tr-edit-hdr .eb-title{font-weight:800;font-size:.82rem;color:#fff;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tr-edit-actions{padding:8px 10px;background:var(--card);display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.tr-edit-meta{padding:4px 12px 6px;font-size:.69rem;color:var(--muted);background:var(--card);border-top:1px solid var(--border);}
+.tb-btn{padding:5px 11px;border-radius:5px;font-size:.68rem;font-weight:700;cursor:pointer;border:none;transition:all .14s;white-space:nowrap;}
+.tb-btn-del{background:rgba(239,68,68,.1);color:var(--red);border:1.5px solid rgba(239,68,68,.3);}
+.tb-btn-del:hover:not(:disabled){background:var(--red);color:#fff;border-color:var(--red);}
+.tb-btn-del:disabled{opacity:.35;cursor:not-allowed;}
+.tb-btn-undo{background:var(--card);color:var(--text2);border:1.5px solid var(--border2);}
+.tb-btn-undo:hover:not(:disabled){background:var(--border);color:var(--text);}
+.tb-btn-undo:disabled{opacity:.35;cursor:not-allowed;}
+.tb-btn-cancel{background:var(--card);color:var(--text2);border:1.5px solid var(--border2);}
+.tb-btn-cancel:hover{background:var(--border);color:var(--text);}
+.tb-btn-save{background:var(--green);color:#fff;border:1.5px solid var(--green);}
+.tb-btn-save:hover{opacity:.88;}
+#trLassoCanvas{position:absolute;inset:0;z-index:1000;cursor:crosshair;display:none;}
+#trLassoCanvas.active{display:block;}
 
 /* ── TRACK DROP ZONE ── */
 /* ── MODE TOGGLE ── */
@@ -751,6 +793,21 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       </div>
       <button class="btn btn-red btn-sm" onclick="trDeleteSelected()">🗑</button>
     </div>
+    <!-- EDIT TOOLBAR -->
+    <div id="trEditBar">
+      <div class="tr-edit-hdr">
+        <span class="eb-title" id="trEditTitle">Edit Track</span>
+      </div>
+      <div class="tr-edit-actions">
+        <button class="tb-btn" id="trPanBtn"   onclick="trSetEditMode('pan')"   style="background:var(--accent);color:#fff;border-color:var(--accent)">✋ Pan</button>
+        <button class="tb-btn" id="trLassoBtn" onclick="trSetEditMode('lasso')" style="background:var(--card);color:var(--text2);border:1.5px solid var(--border2)">🔲 Lasso</button>
+        <button class="tb-btn tb-btn-del" id="trClearSelBtn" onclick="trClearSelection()" disabled style="margin-left:4px">✕ Clear (<span id="trSelCount">0</span>)</button>
+        <button class="tb-btn tb-btn-undo" id="trUndoBtn" onclick="trEditUndo()" disabled style="margin-left:auto">&#8617; Undo</button>
+        <button class="tb-btn tb-btn-cancel" onclick="trEditCancel()">&#x2715; Cancel</button>
+        <button class="tb-btn tb-btn-save" onclick="trEditSave()">&#128190; Save</button>
+      </div>
+      <div class="tr-edit-meta" id="trEditMeta">Switch to Lasso mode then draw around points to mark for deletion. Save when done.</div>
+    </div>
     <div id="trLoadedSec" style="display:none;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0;">
       <div class="sh" style="margin-bottom:5px">📄 Loaded Files</div>
       <div class="file-chips-list" id="trFileChipsList"></div>
@@ -794,6 +851,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <p style="font-size:.71rem;margin:0">Select multiple to compare</p>
     </div>
     <div id="trLeafletMap" style="position:absolute;inset:0;width:100%;height:100%;display:none;"></div>
+    <canvas id="trLassoCanvas"></canvas>
     <button class="map-view-btn" id="trMapViewBtn" onclick="toggleMapView('trk')" style="display:none;">🛰 Satellite</button>
   </div>
 </div>
@@ -1945,7 +2003,7 @@ trFi2.addEventListener('change', e => { [...e.target.files].forEach(f => loadFil
 // ── Track mode: Start Over ──
 document.getElementById('trStartOverBtn').addEventListener('click', () => {
   confirm2('Start Over?', 'All loaded tracks and marks will be cleared. This cannot be undone.', () => {
-    TRACKS = []; WP = []; EG = []; NG = []; SN = []; CS = []; BS = [];
+    TRACKS = []; DELETED_TRACK_SEGS = []; WP = []; EG = []; NG = []; SN = []; CS = []; BS = [];
     loadedFileMeta = []; analysed = false; selIds.clear();
     trRenderFileChips();
     trRender();
@@ -2396,7 +2454,7 @@ function doExport(){
   const fileFmt=getSelectedFileFmt();
   const pts=expSet();
   const keptTracks=TRACKS.filter(t=>!t.binned);
-  const binnedTracks=TRACKS.filter(t=>t.binned);
+  const binnedTracks=[...TRACKS.filter(t=>t.binned), ...DELETED_TRACK_SEGS];
   document.getElementById('expModal').classList.remove('open');
 
   if(fileFmt==='gpx'){
@@ -2613,6 +2671,7 @@ function toggleMapView(which) {
 }
 
 let TRACKS = [];
+let DELETED_TRACK_SEGS = []; // segments removed during point editing — go to binned file
 const TR_COLORS = ['#e63946','#2196f3','#ff9800','#4caf50','#9c27b0','#00bcd4','#ff5722','#8bc34a','#673ab7','#f06292','#26c6da','#ffd54f','#66bb6a','#ef5350','#42a5f5'];
 
 function setMode(m) {
@@ -2732,6 +2791,7 @@ function trRender() {
       <div class="tr-actions" onclick="event.stopPropagation()">
         <button class="tr-keep${!t.binned?' active':''}" onclick="trSetKept('${t.id}',true)">Keep</button>
         <button class="tr-remove${t.binned?' active':''}" onclick="trSetKept('${t.id}',false)">Remove</button>
+        <button style="padding:3px 8px;border-radius:5px;font-size:.65rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border2);background:transparent;color:var(--text2);transition:all .13s;" title="Edit track points" onclick="trOpenEdit('${t.id}')">✏️</button>
       </div>
     </div>`;
   }).join('');
@@ -2969,7 +3029,312 @@ document.getElementById('trExpModal').addEventListener('click', e => { if(e.targ
 
 function trExport() { openTrExpModal(); }
 
+
+
+
+/* ════════════════════════════════════════════════════
+   TRACK EDIT MODE (in-place, pan/lasso toggle)
+════════════════════════════════════════════════════ */
+let _editTrackId = null;
+let _editMarkers = [];
+let _editPolyline = null;
+let _editSelected = new Set();  // indices marked for deletion (orange)
+let _editUndoStack = [];        // snapshots of t.pts before each save action
+let _editMode = 'lasso';        // 'lasso' | 'pan'
+let _lassoDrawing = false;
+let _lassoPath = [];
+
+function trOpenEdit(id) {
+  const t = TRACKS.find(x => x.id == id);
+  if (!t) return;
+  _editTrackId = id;
+  _editSelected.clear();
+  _editUndoStack = [];
+  _lassoPath = [];
+  _lassoDrawing = false;
+  _editMode = 'lasso';
+
+  // Show edit bar, hide normal sidebar content
+  document.getElementById('trEditBar').classList.add('open');
+  document.getElementById('trLoadedSec').style.display = 'none';
+  const trStats = document.getElementById('trStats');
+  if (trStats) trStats.style.display = 'none';
+  document.getElementById('trList').style.display = 'none';
+  const trExpSec = document.getElementById('trExportSec');
+  if (trExpSec) trExpSec.style.display = 'none';
+  document.querySelectorAll('.tp-topbar').forEach(el => el.style.display = 'none');
+
+  document.getElementById('trEditTitle').textContent = '✏️ ' + t.name;
+  _trUpdateEditMeta(t);
+  _trUpdateEditBtns();
+
+  // Show track on map with individual points
+  TRACKS.forEach(x => x.selected = false);
+  t.selected = true;
+  trDrawMap([t]);
+  _trRenderEditMap(t);
+  _trSetEditMode('lasso');  // start in lasso mode, lasso canvas active
+  setTimeout(() => _trMap && _trMap.invalidateSize(), 120);
+}
+
+function trSetEditMode(mode) {
+  _editMode = mode;
+  _trSetEditMode(mode);
+}
+
+function _trSetEditMode(mode) {
+  const panBtn   = document.getElementById('trPanBtn');
+  const lassoBtn = document.getElementById('trLassoBtn');
+  const activeStyle   = 'background:var(--accent);color:#fff;border-color:var(--accent)';
+  const inactiveStyle = 'background:var(--card);color:var(--text2);border:1.5px solid var(--border2)';
+
+  if (mode === 'pan') {
+    if (panBtn)   panBtn.style.cssText   = activeStyle;
+    if (lassoBtn) lassoBtn.style.cssText = inactiveStyle;
+    // Hide lasso canvas so Leaflet gets mouse events → pan works
+    const canvas = document.getElementById('trLassoCanvas');
+    if (canvas) canvas.classList.remove('active');
+    if (_trMap) { _trMap.dragging.enable(); _trMap.scrollWheelZoom.enable(); }
+  } else {
+    if (panBtn)   panBtn.style.cssText   = inactiveStyle;
+    if (lassoBtn) lassoBtn.style.cssText = activeStyle;
+    // Show lasso canvas (intercepts mouse for drawing)
+    _trActivateLasso(true);
+    if (_trMap) _trMap.dragging.disable();
+  }
+}
+
+function _trActivateLasso(on) {
+  const canvas = document.getElementById('trLassoCanvas');
+  if (!canvas) return;
+  if (on) {
+    canvas.classList.add('active');
+    _trSetupLassoCanvas();
+  } else {
+    canvas.classList.remove('active');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function _trUpdateEditMeta(t) {
+  const sel = _editSelected.size;
+  const d   = (t.dist/1000).toFixed(2);
+  const el  = document.getElementById('trEditMeta');
+  if (!el) return;
+  if (sel > 0) {
+    el.textContent = sel + ' point' + (sel!==1?'s':'') + ' marked for deletion · continue selecting or click Save to commit';
+  } else {
+    el.textContent = t.pts.length.toLocaleString() + ' pts · ' + d + ' km  ·  Use Lasso to mark points, Pan to navigate';
+  }
+}
+
+function _trUpdateEditBtns() {
+  const clear = document.getElementById('trClearSelBtn');
+  const undo  = document.getElementById('trUndoBtn');
+  const cnt   = document.getElementById('trSelCount');
+  if (clear) clear.disabled = _editSelected.size === 0;
+  if (cnt)   cnt.textContent = _editSelected.size;
+  if (undo)  undo.disabled   = _editUndoStack.length === 0;
+  const t = TRACKS.find(x => x.id == _editTrackId);
+  if (t) _trUpdateEditMeta(t);
+}
+
+function trClearSelection() {
+  _editSelected.clear();
+  const t = TRACKS.find(x => x.id == _editTrackId);
+  if (t) { _trRefreshMarkers(t); _trUpdateEditBtns(); }
+}
+
+function _trRenderEditMap(t) {
+  if (!_trMap) trInitMap();
+  if (_editPolyline) { _trMap.removeLayer(_editPolyline); _editPolyline = null; }
+  _editMarkers.forEach(m => _trMap.removeLayer(m));
+  _editMarkers = [];
+  if (!t || !t.pts.length) return;
+
+  // Draw track polyline
+  _editPolyline = L.polyline(t.pts.map(p => [p.lat, p.lon]), {
+    color: t.color, weight: 3, opacity: 0.65, interactive: false
+  }).addTo(_trMap);
+
+  // Draw individual point markers — orange = marked for deletion
+  t.pts.forEach((p, i) => {
+    const marked = _editSelected.has(i);
+    const m = L.circleMarker([p.lat, p.lon], {
+      radius: 5,
+      color: marked ? '#ea580c' : 'rgba(255,255,255,0.5)',
+      weight: 1.5,
+      fillColor: marked ? '#f97316' : t.color,
+      fillOpacity: marked ? 1 : 0.8,
+      interactive: true
+    }).addTo(_trMap);
+    // Click individual point to toggle
+    m.on('click', e => {
+      L.DomEvent.stopPropagation(e);
+      if (_editSelected.has(i)) _editSelected.delete(i); else _editSelected.add(i);
+      _trRefreshMarkers(t); _trUpdateEditBtns();
+    });
+    _editMarkers.push(m);
+  });
+
+  _trMap.fitBounds(_editPolyline.getBounds(), { padding: [40, 40] });
+}
+
+function _trRefreshMarkers(t) {
+  _editMarkers.forEach((m, i) => {
+    const marked = _editSelected.has(i);
+    m.setStyle({
+      color: marked ? '#ea580c' : 'rgba(255,255,255,0.5)',
+      fillColor: marked ? '#f97316' : t.color,
+      fillOpacity: marked ? 1 : 0.8
+    });
+  });
+}
+
+function _trSetupLassoCanvas() {
+  const canvas = document.getElementById('trLassoCanvas');
+  const area   = document.getElementById('trMapArea');
+  if (!canvas || !area) return;
+  const resize = () => { canvas.width = area.clientWidth; canvas.height = area.clientHeight; };
+  resize();
+
+  // Replace with fresh clone to clear stale listeners
+  const fresh = canvas.cloneNode(false);
+  fresh.id = 'trLassoCanvas';
+  fresh.classList.add('active');
+  canvas.parentNode.replaceChild(fresh, canvas);
+
+  const getPos = e => {
+    const r   = fresh.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  };
+  fresh.addEventListener('mousedown',  e => { _lassoDrawing = true;  _lassoPath = [getPos(e)]; });
+  fresh.addEventListener('mousemove',  e => { if (!_lassoDrawing) return; _lassoPath.push(getPos(e)); _trDrawLasso(fresh); });
+  fresh.addEventListener('mouseup',    () => { if (!_lassoDrawing) return; _lassoDrawing = false; _trApplyLasso(fresh); });
+  fresh.addEventListener('touchstart', e => { e.preventDefault(); _lassoDrawing = true; _lassoPath = [getPos(e)]; },                     { passive: false });
+  fresh.addEventListener('touchmove',  e => { e.preventDefault(); if (!_lassoDrawing) return; _lassoPath.push(getPos(e)); _trDrawLasso(fresh); }, { passive: false });
+  fresh.addEventListener('touchend',   () => { if (!_lassoDrawing) return; _lassoDrawing = false; _trApplyLasso(fresh); });
+  new ResizeObserver(resize).observe(area);
+}
+
+function _trDrawLasso(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (_lassoPath.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(_lassoPath[0].x, _lassoPath[0].y);
+  _lassoPath.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.closePath();
+  ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.setLineDash([5, 3]); ctx.stroke();
+  ctx.fillStyle = 'rgba(249,115,22,0.1)'; ctx.fill();
+  ctx.setLineDash([]);
+}
+
+function _trApplyLasso(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (_lassoPath.length < 3) return;
+  const t = TRACKS.find(x => x.id == _editTrackId);
+  if (!t) return;
+  t.pts.forEach((p, i) => {
+    const pt = _trMap.latLngToContainerPoint([p.lat, p.lon]);
+    if (_trPointInPoly(pt.x, pt.y, _lassoPath)) _editSelected.add(i);
+  });
+  _lassoPath = [];
+  _trRefreshMarkers(t);
+  _trUpdateEditBtns();
+}
+
+function _trPointInPoly(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
+// Undo restores to the pts snapshot before last save-within-session
+function trEditUndo() {
+  const t = TRACKS.find(x => x.id == _editTrackId);
+  if (!t || !_editUndoStack.length) return;
+  if (DELETED_TRACK_SEGS.length) DELETED_TRACK_SEGS.pop();
+  t.pts  = _editUndoStack.pop();
+  t.dist = t.pts.reduce((d, p, i) => i === 0 ? 0 : d + hav(t.pts[i-1].lat, t.pts[i-1].lon, p.lat, p.lon), 0);
+  _editSelected.clear();
+  _trRenderEditMap(t);
+  _trUpdateEditBtns();
+}
+
+// Save: commit all marked points as deleted
+function trEditSave() {
+  const t = TRACKS.find(x => x.id == _editTrackId);
+  if (!t) return;
+  if (_editSelected.size === 0) {
+    // Nothing marked — just close
+    _trCloseEditUI();
+    _editTrackId = null;
+    trRender();
+    return;
+  }
+  // Push undo snapshot
+  _editUndoStack.push(t.pts.map(p => ({...p})));
+  // Record deleted pts as binned segment
+  const delIdxs    = [..._editSelected].sort((a, b) => a - b);
+  const deletedPts = delIdxs.map(i => t.pts[i]);
+  if (deletedPts.length >= 2) {
+    DELETED_TRACK_SEGS.push({
+      id: Date.now() + Math.random(),
+      name: t.name + ' (deleted segment)',
+      pts: deletedPts,
+      dist: deletedPts.reduce((d, p, i) => i === 0 ? 0 : d + hav(deletedPts[i-1].lat, deletedPts[i-1].lon, p.lat, p.lon), 0),
+      binned: true, color: t.color
+    });
+  }
+  // Remove marked points
+  t.pts  = t.pts.filter((_, i) => !_editSelected.has(i));
+  t.dist = t.pts.reduce((d, p, i) => i === 0 ? 0 : d + hav(t.pts[i-1].lat, t.pts[i-1].lon, p.lat, p.lon), 0);
+  _editSelected.clear();
+  _editUndoStack = [];  // clear undo after commit
+  _trCloseEditUI();
+  _editTrackId = null;
+  trRender();
+  toast('\u2713 "' + t.name + '" saved \u2014 ' + t.pts.length + ' pts, ' + (t.dist/1000).toFixed(2) + ' km', 'g');
+}
+
+function trEditCancel() {
+  // Fully restore original pts via undo stack (go back to beginning)
+  const t = TRACKS.find(x => x.id == _editTrackId);
+  if (t && _editUndoStack.length) {
+    DELETED_TRACK_SEGS.splice(DELETED_TRACK_SEGS.length - _editUndoStack.length);
+    t.pts  = _editUndoStack[0];
+    t.dist = t.pts.reduce((d, p, i) => i === 0 ? 0 : d + hav(t.pts[i-1].lat, t.pts[i-1].lon, p.lat, p.lon), 0);
+  }
+  _editUndoStack = [];
+  _editSelected.clear();
+  _trCloseEditUI();
+  _editTrackId = null;
+  trRender();
+}
+
+function _trCloseEditUI() {
+  document.getElementById('trEditBar').classList.remove('open');
+  document.querySelectorAll('.tp-topbar').forEach(el => el.style.display = '');
+  _trActivateLasso(false);
+  // Re-enable Leaflet dragging
+  if (_trMap) _trMap.dragging.enable();
+  // Remove edit markers/polyline
+  if (_editPolyline) { _trMap.removeLayer(_editPolyline); _editPolyline = null; }
+  _editMarkers.forEach(m => _trMap.removeLayer(m));
+  _editMarkers = [];
+}
+
+
+
 </script>
 
+</div>
+
 </body>
-</html>
