@@ -489,7 +489,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 /* ── TRACK PANEL (hidden by default) ── */
 #trackPanel{display:none;flex:1;overflow:hidden;}
 #trackPanel.tp-on{display:flex;}
-.tp-sidebar{width:420px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--white);overflow:hidden;}
+.tp-sidebar{width:570px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--white);overflow:hidden;}
 .tp-topbar{padding:10px 12px;border-bottom:1px solid var(--border);background:var(--card);display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
 .tp-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:5px;}
 .tp-foot{padding:8px 10px;border-top:1px solid var(--border);background:var(--card);flex-shrink:0;}
@@ -648,6 +648,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
             <th id="th2" class="csrc">Longitude<br><span class="spill">Source</span></th>
             <th id="th3" class="calt">Latitude<br><small>(alt)</small></th>
             <th id="th4" class="calt">Longitude<br><small>(alt)</small></th>
+            <th style="color:var(--muted);font-size:.69rem">Date<br><small>(AEST)</small></th>
             <th>Status</th>
           </tr></thead>
           <tbody id="allBody"></tbody>
@@ -723,6 +724,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
           <th class="csrc">Longitude<br><span class="spill">Source</span></th>
           <th class="calt">Latitude<br><small>(alt)</small></th>
           <th class="calt">Longitude<br><small>(alt)</small></th>
+          <th style="color:var(--muted);font-size:.69rem">Date<br><small>(AEST)</small></th>
         </tr></thead>
         <tbody id="binnedBody"></tbody>
       </table></div></div>
@@ -745,6 +747,13 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         <input type="text" class="search-input" id="trSearch" placeholder="Search…" oninput="trRender()" style="width:100px;">
       </div>
       <button class="btn btn-red btn-sm" onclick="trDeleteSelected()">🗑</button>
+    </div>
+    <div id="trLoadedSec" style="display:none;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0;">
+      <div class="sh" style="margin-bottom:5px">📄 Loaded Files</div>
+      <div class="file-chips-list" id="trFileChipsList"></div>
+      <button class="btn-add-file" id="trAddFileBtn">＋ Add Another File</button>
+      <input type="file" id="trFi2" accept=".gpx,.csv,.kml,.txt" style="display:none">
+      <button class="btn btn-outline btn-full" id="trStartOverBtn" style="margin-top:6px;color:var(--red);border-color:var(--red)">↺ Start Over</button>
     </div>
     <div id="trStats" style="display:none;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -771,7 +780,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
           <input type="checkbox" id="cbTrDate">
           <div><label for="cbTrDate">Append date to track names</label><span>e.g. Trail Loop - 18/03/2026</span></div>
         </div>
-        <button class="btn btn-green btn-full" onclick="trExport()" style="padding:11px;font-size:.88rem;">⬇ Export Tracks (GPX)</button>
+        <button class="btn btn-green btn-full" onclick="openTrExpModal()" style="padding:11px;font-size:.88rem;">⬇ Export Tracks (GPX)</button>
       </div>
     </div>
   </div>
@@ -824,6 +833,22 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
   </div>
   <div class="mcoords" id="mcoords" style="display:none"></div>
 </div>
+</div>
+
+<!-- TRACK EXPORT MODAL -->
+<div class="modal-bg" id="trExpModal">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-icon">💾</div>
+    <div class="modal-title">Export Tracks</div>
+    <div class="modal-msg" style="margin-bottom:12px">Name your file and download as GPX.</div>
+    <input type="text" class="exp-modal-input" id="trExpFileName" placeholder="e.g. My Hiking Tracks Jun 25" maxlength="80">
+    <div class="exp-modal-hint" id="trExpFilePreview"></div>
+    <div class="exp-modal-binned" id="trExpBinnedNote" style="display:none"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline btn-sm" id="trExpModalCancel" style="width:auto">Cancel</button>
+      <button class="btn btn-green btn-sm" id="trExpModalOK" style="width:auto">⬇ Download</button>
+    </div>
+  </div>
 </div>
 
 <!-- WELCOME MODAL -->
@@ -1650,11 +1675,19 @@ function badges(){
 }
 
 // ─── COORD TABLE HEADER ROW ───────────────────────────
+// Format waypoint date for display — converts UTC to AEST (UTC+10)
+function fmtWptDate(w){
+  if(!w.dt) return '—';
+  const d = new Date(w.dt.getTime() + 10*60*60*1000);
+  return d.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'2-digit',timeZone:'UTC'});
+}
+
 function coordTH(sl,al){
   return `<th class="csrc">Latitude<br><span class="spill">Source · ${sl}</span></th>
           <th class="csrc">Longitude<br><span class="spill">Source · ${sl}</span></th>
           <th class="calt">Latitude<br><small>(${al})</small></th>
-          <th class="calt">Longitude<br><small>(${al})</small></th>`;
+          <th class="calt">Longitude<br><small>(${al})</small></th>
+          <th style="color:var(--muted);font-size:.69rem">Date<br><small>(AEST)</small></th>`;
 }
 
 // ─── RENDER ALL MARKS ────────────────────────────────
@@ -1690,6 +1723,7 @@ function renderAll(){
       <td class="mono csrc">${lns}</td>
       <td class="mono calt">${la}</td>
       <td class="mono calt">${lna}</td>
+      <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>
       <td>${bdg[w.status]||''}</td>`;
     const _en0=makeEN(w);const _td0=tr.querySelector('.en-td-'+w.id);_td0.appendChild(_en0);attachENtoTD(_td0,_en0);
     tr.addEventListener('click',e=>{
@@ -1712,7 +1746,7 @@ function renderAll(){
 // ─── GROUP CARD HELPER ───────────────────────────────
 function coordTDs(w){
   const {ls,lns,la,lna}=coordCells(w);
-  return `<td class="mono csrc" style="font-size:.68rem">${ls}</td><td class="mono csrc" style="font-size:.68rem">${lns}</td><td class="mono calt" style="font-size:.68rem">${la}</td><td class="mono calt" style="font-size:.68rem">${lna}</td>`;
+  return `<td class="mono csrc" style="font-size:.68rem">${ls}</td><td class="mono csrc" style="font-size:.68rem">${lns}</td><td class="mono calt" style="font-size:.68rem">${la}</td><td class="mono calt" style="font-size:.68rem">${lna}</td><td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>`;
 }
 
 // ─── RENDER EXACT GROUPS ─────────────────────────────
@@ -1882,6 +1916,60 @@ function snAll(gi,v){
   tfi.addEventListener('change', e => { [...e.target.files].forEach(f => loadFile(f)); tfi.value = ''; });
 })();
 
+// ── Track mode: Add Another File ──
+const trFi2 = document.getElementById('trFi2');
+document.getElementById('trAddFileBtn').addEventListener('click', () => trFi2.click());
+trFi2.addEventListener('change', e => { [...e.target.files].forEach(f => loadFile(f)); trFi2.value = ''; });
+
+// ── Track mode: Start Over ──
+document.getElementById('trStartOverBtn').addEventListener('click', () => {
+  confirm2('Start Over?', 'All loaded tracks and marks will be cleared. This cannot be undone.', () => {
+    TRACKS = []; WP = []; EG = []; NG = []; SN = []; CS = []; BS = [];
+    loadedFileMeta = []; analysed = false; selIds.clear();
+    trRenderFileChips();
+    trRender();
+    // Also reset waypoint UI
+    document.getElementById('uploadSec').style.display = 'block';
+    document.getElementById('loadedSec').style.display = 'none';
+    document.getElementById('settingsSec').style.display = 'none';
+    document.getElementById('statsBox').style.display = 'none';
+    document.getElementById('exportSec').style.display = 'none';
+    ['emAll','emExact','emNear','emSame','emClean','emBinned'].forEach(id => document.getElementById(id).style.display = 'block');
+    ['allContent','exactContent','nearContent','sameContent','cleanContent','binnedContent'].forEach(id => document.getElementById(id).style.display = 'none');
+    badges(); showMap([]); setTab('all');
+    const fi = document.getElementById('fi'); if(fi) fi.value = '';
+    toast('Cleared — load a new file', 'g');
+  });
+});
+
+function trRenderFileChips() {
+  const list = document.getElementById('trFileChipsList');
+  const sec = document.getElementById('trLoadedSec');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!loadedFileMeta.length) { if(sec) sec.style.display = 'none'; return; }
+  if(sec) sec.style.display = 'block';
+  loadedFileMeta.forEach((fm, idx) => {
+    const trackCount = TRACKS.filter(t => t.ff === fm.name).length;
+    const row = document.createElement('div'); row.className = 'file-chip-row';
+    row.innerHTML = `<span class="fcn" title="${esc(fm.name)}">${esc(fm.name)}</span>
+      <span class="fcc">${fm.count} marks · ${trackCount} track${trackCount !== 1 ? 's' : ''}</span>
+      <button class="fcx" title="Remove this file" onclick="trRemoveFile(${idx})">✕</button>`;
+    list.appendChild(row);
+  });
+}
+
+function trRemoveFile(idx) {
+  const fname = loadedFileMeta[idx].name;
+  loadedFileMeta.splice(idx, 1);
+  WP = WP.filter(w => w.ff !== fname);
+  TRACKS = TRACKS.filter(t => t.ff !== fname);
+  TRACKS.filter(t => !t.binned).forEach((t, i) => t.color = TR_COLORS[i % TR_COLORS.length]);
+  trRenderFileChips();
+  trRender();
+  if (WP.length) analyse(); else { renderAll(); badges(); buildClean(); }
+}
+
 // snPurge removed — unchecked marks are purged automatically at export time
 
 // ─── NEAR HELPERS ────────────────────────────────────
@@ -1950,7 +2038,8 @@ function buildClean(){
       <td class="mono csrc" style="font-size:.68rem">${ls}</td>
       <td class="mono csrc" style="font-size:.68rem">${lns}</td>
       <td class="mono calt" style="font-size:.68rem">${la}</td>
-      <td class="mono calt" style="font-size:.68rem">${lna}</td>`;
+      <td class="mono calt" style="font-size:.68rem">${lna}</td>
+      <td style="font-size:.68rem;color:var(--muted);white-space:nowrap">${fmtWptDate(w)}</td>`;
     tr.addEventListener('click',()=>showMap([w]));
     tb2.appendChild(tr);
   });
@@ -2150,14 +2239,27 @@ document.getElementById('purgeNear').addEventListener('click',()=>{
 function buildGPX(pts,creator,fmt,tracks){
   function eLat(w){return exportCoord(w,true,fmt);}
   function eLon(w){return exportCoord(w,false,fmt);}
-  const cs='/';
-  const wpts=pts.map(w=>`  <wpt lat="${w.lat.toFixed(8)}" lon="${w.lon.toFixed(8)}">\n    <n>${eX(label(w))}<${cs}name>${w.dt?'\n    <time>'+w.dt.toISOString()+'<'+cs+'time>':''}\n    <cmt>${eX(eLat(w)+', '+eLon(w))}<${cs}cmt>\n  <${cs}wpt>`);
+  const slash='/';
+  const wpts=pts.map(w=>[
+    `  <wpt lat="${w.lat.toFixed(8)}" lon="${w.lon.toFixed(8)}">`,
+    `    <name>${eX(label(w))}<`+slash+`name>`,
+    w.dt?`    <time>${w.dt.toISOString()}<`+slash+`time>`:'',
+    `    <cmt>${eX(eLat(w)+', '+eLon(w))}<`+slash+`cmt>`,
+    `  <`+slash+`wpt>`
+  ].filter(Boolean).join('\n'));
   const trks=(tracks||[]).map(t=>{
-    const tpts=t.pts.map(p=>`      <trkpt lat="${p.lat.toFixed(8)}" lon="${p.lon.toFixed(8)}"><${cs}trkpt>`).join('\n');
-    return`  <trk>\n    <n>${eX(t.name)}<${cs}name>\n    <trkseg>\n${tpts}\n    <${cs}trkseg>\n  <${cs}trk>`;
+    const tpts=t.pts.map(p=>`      <trkpt lat="${p.lat.toFixed(8)}" lon="${p.lon.toFixed(8)}"><`+slash+`trkpt>`).join('\n');
+    return [
+      `  <trk>`,
+      `    <name>${eX(t.name)}<`+slash+`name>`,
+      `    <trkseg>`,
+      tpts,
+      `    <`+slash+`trkseg>`,
+      `  <`+slash+`trk>`
+    ].join('\n');
   });
   const body=[...wpts,...trks].join('\n');
-  return`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="${eX(creator)}" xmlns="http://www.topografix.com/GPX/1/1">\n${body}\n<${cs}gpx>`;
+  return`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="${eX(creator)}" xmlns="http://www.topografix.com/GPX/1/1">\n${body}\n<`+slash+`gpx>`;
 }
 
 function exportCoord(w,isLat,fmt){
@@ -2520,9 +2622,10 @@ function trParseGPX(txt, fn) {
     // Earliest date from <time> elements in trkpt
     const dates = trkpts.map(p => { const t=p.querySelector('time'); return t?new Date(t.textContent.trim()):null; }).filter(Boolean);
     const earliestDate = dates.length ? new Date(Math.min(...dates.map(d=>d.getTime()))) : null;
+    const latestDate = dates.length ? new Date(Math.max(...dates.map(d=>d.getTime()))) : null;
     let dist = 0;
     for (let j = 1; j < pts.length; j++) dist += hav(pts[j-1].lat, pts[j-1].lon, pts[j].lat, pts[j].lon);
-    return { id: Date.now() + Math.random(), name, pts, dist, earliestDate, selected: false, binned: false, color: '#888' };
+    return { id: Date.now() + Math.random(), name, pts, dist, earliestDate, latestDate, ff: fn, selected: false, binned: false, color: '#888' };
   });
 }
 
@@ -2539,6 +2642,7 @@ function trLoad(file) {
 }
 
 function trRender() {
+  trRenderFileChips();
   const q = (document.getElementById('trSearch')?.value || '').toLowerCase();
   const allLoaded = TRACKS; // includes binned
   const active = TRACKS.filter(t => !t.binned);
@@ -2578,10 +2682,27 @@ function trRender() {
     ? `<div class="tr-legend">${sel.map(t => `<span class="tr-legend-item"><span class="tr-legend-sw" style="background:${t.color}"></span><span>${esc(t.name)}</span></span>`).join('')}</div>`
     : '';
   html += visible.map(t => {
-    const dateStr = t.earliestDate ? t.earliestDate.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : null;
-    const meta = [t.pts.length.toLocaleString() + ' pts', (t.dist/1000).toFixed(2) + ' km', dateStr].filter(Boolean).join(' · ');
+    // Convert UTC date to AEST (UTC+10) for display only — export keeps original UTC
+    const toAEST = d => new Date(d.getTime() + 10 * 60 * 60 * 1000);
+    const fmtDate = d => toAEST(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'2-digit',timeZone:'UTC'});
+    const fmtTime = d => toAEST(d).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'UTC'});
+    let spanStr = '';
+    if (t.earliestDate && t.latestDate) {
+      const sameDay = fmtDate(t.earliestDate) === fmtDate(t.latestDate);
+      if (sameDay) {
+        spanStr = fmtDate(t.earliestDate) + ' ' + fmtTime(t.earliestDate) + ' – ' + fmtTime(t.latestDate);
+      } else {
+        spanStr = fmtDate(t.earliestDate) + ' ' + fmtTime(t.earliestDate) + ' – ' + fmtDate(t.latestDate) + ' ' + fmtTime(t.latestDate);
+      }
+    } else if (t.earliestDate) {
+      spanStr = fmtDate(t.earliestDate);
+    }
+    const metaParts = [t.pts.length.toLocaleString() + ' pts', (t.dist/1000).toFixed(2) + ' km'];
+    if (spanStr) metaParts.push(spanStr);
+    const meta = metaParts.join(' · ');
     return `
     <div class="tr-row${t.selected ? ' tr-sel' : ''}${t.binned ? ' tr-binned' : ''}" onclick="trToggle('${t.id}',${!t.selected})">
+      <input type="checkbox" class="tr-cb" ${t.selected ? 'checked' : ''} onclick="event.stopPropagation();trToggle('${t.id}',this.checked)">
       <span class="tr-swatch" style="background:${t.color}"></span>
       <div class="tr-info">
         <div class="tr-name" title="${esc(t.name)}">${esc(t.name)}</div>
@@ -2673,31 +2794,38 @@ function trDrawCanvas(tracks) {
   const hasBg = document.getElementById('trMapIframe')?.style.display === 'block';
   if(!hasBg) {
     ctx.fillStyle = '#1a2a3a'; ctx.fillRect(0, 0, W, H);
-    // subtle grid
     ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
     for (let i = 1; i < 5; i++) {
       const y = H * i / 5; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       const x = W * i / 5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
     }
   }
-  // bounding box
-  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  // Mercator projection helpers
+  // latToMerc: converts latitude to Mercator Y (Web Mercator style)
+  const latToMerc = lat => {
+    const r = lat * Math.PI / 180;
+    return Math.log(Math.tan(Math.PI / 4 + r / 2));
+  };
+  // bounding box in Mercator space
+  let minLon = Infinity, maxLon = -Infinity, minMerc = Infinity, maxMerc = -Infinity;
   tracks.forEach(t => t.pts.forEach(p => {
-    if (p.lat < minLat) minLat = p.lat; if (p.lat > maxLat) maxLat = p.lat;
     if (p.lon < minLon) minLon = p.lon; if (p.lon > maxLon) maxLon = p.lon;
+    const m = latToMerc(p.lat);
+    if (m < minMerc) minMerc = m; if (m > maxMerc) maxMerc = m;
   }));
   const pad = 40;
   const scX = (W - pad*2) / (maxLon - minLon || 0.001);
-  const scY = (H - pad*2) / (maxLat - minLat || 0.001);
+  const scY = (H - pad*2) / (maxMerc - minMerc || 0.001);
   const sc = Math.min(scX, scY);
   const oX = (W - (maxLon - minLon) * sc) / 2;
-  const oY = (H - (maxLat - minLat) * sc) / 2;
+  const oY = (H - (maxMerc - minMerc) * sc) / 2;
+  // Project: lon → canvas X, lat → Mercator → canvas Y
   const tx = lon => oX + (lon - minLon) * sc;
-  const ty = lat => oY + (maxLat - lat) * sc;
+  const ty = lat => oY + (maxMerc - latToMerc(lat)) * sc;
   tracks.forEach(t => {
     if (!t.pts.length) return;
-    // shadow (thicker when map tile visible for contrast)
     const hasTile = document.getElementById('trMapIframe')?.style.display === 'block';
+    // shadow
     ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = hasTile ? 6 : 4; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.beginPath(); t.pts.forEach((p, i) => i ? ctx.lineTo(tx(p.lon), ty(p.lat)) : ctx.moveTo(tx(p.lon), ty(p.lat))); ctx.stroke();
     // line
@@ -2716,34 +2844,90 @@ function trDrawCanvas(tracks) {
   });
 }
 
-function trExport() {
+function buildTrackGPX(tracks, creator) {
+  const slash = '/';
+  const lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+    `<gpx version="1.1" creator="${esc(creator)}" xmlns="http://www.topografix.com/GPX/1/1">`];
+  tracks.forEach(t => {
+    lines.push(`  <trk>`);
+    lines.push(`    <n>${esc(t._exportName || t.name)}<`+slash+`name>`);
+    lines.push(`    <trkseg>`);
+    t.pts.forEach(p => lines.push(`      <trkpt lat="${p.lat.toFixed(8)}" lon="${p.lon.toFixed(8)}"><`+slash+`trkpt>`));
+    lines.push(`    <`+slash+`trkseg>`);
+    lines.push(`  <`+slash+`trk>`);
+  });
+  lines.push(`<`+slash+`gpx>`);
+  return lines.join('\n');
+}
+
+function openTrExpModal() {
   const exp = TRACKS.filter(t => !t.binned);
   if (!exp.length) { alert('No tracks to export.'); return; }
+  const binned = TRACKS.filter(t => t.binned);
+  // Default filename from first loaded file
+  const defaultName = (loadedFileMeta[0]?.name || 'my-tracks').replace(/\.[^.]+$/, '');
+  const input = document.getElementById('trExpFileName');
+  input.value = defaultName;
+  updateTrExpPreview();
+  const note = document.getElementById('trExpBinnedNote');
+  if (binned.length) {
+    const now = new Date(), p = x => String(x).padStart(2,'0');
+    const bfn = `BinnedTracks${p(now.getDate())}${p(now.getMonth()+1)}${String(now.getFullYear()).slice(2)}${p(now.getHours())}${p(now.getMinutes())}.gpx`;
+    note.style.display = 'block';
+    note.innerHTML = `🗑 <strong>${binned.length} removed track${binned.length>1?'s':''}</strong> will also be saved as <strong>${bfn}</strong>`;
+  } else {
+    note.style.display = 'none';
+  }
+  document.getElementById('trExpModal').classList.add('open');
+  input.focus(); input.select();
+}
+
+function updateTrExpPreview() {
+  const raw = document.getElementById('trExpFileName').value.trim() || 'my-tracks';
+  const safe = raw.replace(/[\/\\:*?"<>|]/g, '_');
+  document.getElementById('trExpFilePreview').textContent = `File will be saved as: ${safe}.gpx`;
+}
+
+function doTrExport() {
+  const raw = document.getElementById('trExpFileName').value.trim() || 'my-tracks';
+  const safe = raw.replace(/[\/\\:*?"<>|]/g, '_');
   const norm = document.getElementById('cbTrNorm')?.checked;
   const addDate = document.getElementById('cbTrDate')?.checked;
   const today = new Date();
   const dateStr = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
-  function trLabel(t) {
+  function applyLabel(t) {
     let n = t.name || 'Track';
     if (norm) n = n.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     if (addDate) n = n + ' - ' + dateStr;
     return n;
   }
-  const cs = '/';
-  const lines = ['<?xml version="1.0" encoding="UTF-8"?>',
-    '<gpx version="1.1" creator="Smart Re-Mark" xmlns="http://www.topografix.com/GPX/1/1">'];
-  exp.forEach(t => {
-    lines.push(`  <trk><name>${esc(trLabel(t))}<${cs}name><trkseg>`);
-    t.pts.forEach(p => lines.push(`    <trkpt lat="${p.lat}" lon="${p.lon}"><${cs}trkpt>`));
-    lines.push(`  <${cs}trkseg><${cs}trk>`);
-  });
-  lines.push(`<${cs}gpx>`);
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(new Blob([lines.join('\n')], {type:'application/gpx+xml'})),
-    download: 'Tracks.gpx'
-  });
-  a.click();
+  document.getElementById('trExpModal').classList.remove('open');
+  const exp = TRACKS.filter(t => !t.binned).map(t => ({...t, _exportName: applyLabel(t)}));
+  const binned = TRACKS.filter(t => t.binned).map(t => ({...t, _exportName: t.name}));
+  dl(safe + '.gpx', buildTrackGPX(exp, 'Smart Re-Mark'), 'application/gpx+xml');
+  if (binned.length) {
+    const now = new Date(), p = x => String(x).padStart(2,'0');
+    const bfn = `BinnedTracks${p(now.getDate())}${p(now.getMonth()+1)}${String(now.getFullYear()).slice(2)}${p(now.getHours())}${p(now.getMinutes())}.gpx`;
+    setTimeout(() => {
+      dl(bfn, buildTrackGPX(binned, 'Smart Re-Mark BinnedTracks'), 'application/gpx+xml');
+      toast(`✓ ${exp.length} track${exp.length!==1?'s':''} → ${safe}.gpx  ·  ${binned.length} binned → ${bfn}`, 'g');
+    }, 300);
+  } else {
+    toast(`✓ ${exp.length} track${exp.length!==1?'s':''} saved as ${safe}.gpx`, 'g');
+  }
 }
+
+// Wire track export modal
+document.getElementById('trExpModalCancel').addEventListener('click', () => document.getElementById('trExpModal').classList.remove('open'));
+document.getElementById('trExpModalOK').addEventListener('click', doTrExport);
+document.getElementById('trExpFileName').addEventListener('input', updateTrExpPreview);
+document.getElementById('trExpFileName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); doTrExport(); }
+  if (e.key === 'Escape') { e.preventDefault(); document.getElementById('trExpModal').classList.remove('open'); }
+});
+document.getElementById('trExpModal').addEventListener('click', e => { if(e.target === document.getElementById('trExpModal')) document.getElementById('trExpModal').classList.remove('open'); });
+
+function trExport() { openTrExpModal(); }
 
 </script>
 
