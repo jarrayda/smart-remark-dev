@@ -1993,6 +1993,22 @@ function snAll(gi,v){
   tdz.addEventListener('dragleave', () => tdz.classList.remove('over'));
   tdz.addEventListener('drop', e => { e.preventDefault(); tdz.classList.remove('over'); [...e.dataTransfer.files].forEach(f => loadFile(f)); });
   tfi.addEventListener('change', e => { [...e.target.files].forEach(f => loadFile(f)); tfi.value = ''; });
+
+// ── Spacebar: hold to temporarily pan, release to return to lasso ──
+let _spaceWasLasso = false;
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && _editTrackId && _editMode === 'lasso' && !e.repeat) {
+    e.preventDefault();
+    _spaceWasLasso = true;
+    _trSetEditMode('pan');
+  }
+});
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space' && _spaceWasLasso) {
+    _spaceWasLasso = false;
+    if (_editTrackId) _trSetEditMode('lasso');
+  }
+});
 })();
 
 // ── Track mode: Add Another File ──
@@ -3054,14 +3070,8 @@ function trOpenEdit(id) {
   _lassoDrawing = false;
   _editMode = 'lasso';
 
-  // Show edit bar, hide normal sidebar content
+  // Show edit bar — list stays visible so user can still see all tracks
   document.getElementById('trEditBar').classList.add('open');
-  document.getElementById('trLoadedSec').style.display = 'none';
-  const trStats = document.getElementById('trStats');
-  if (trStats) trStats.style.display = 'none';
-  document.getElementById('trList').style.display = 'none';
-  const trExpSec = document.getElementById('trExportSec');
-  if (trExpSec) trExpSec.style.display = 'none';
   document.querySelectorAll('.tp-topbar').forEach(el => el.style.display = 'none');
 
   document.getElementById('trEditTitle').textContent = '✏️ ' + t.name;
