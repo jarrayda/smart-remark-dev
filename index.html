@@ -540,13 +540,12 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
   border-bottom:none;border-top:8px solid #fff;
   filter:drop-shadow(0 2px 2px rgba(0,0,0,0.08));}
 /* Pick-on-map crosshair overlay */
-#mapPickOverlay{position:absolute;inset:0;z-index:25;display:none;cursor:crosshair;pointer-events:none;}
+#mapPickOverlay{position:absolute;inset:0;z-index:25;display:none;cursor:crosshair;}
 #mapPickBanner{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:26;
   background:rgba(26,95,138,0.92);color:#fff;border-radius:20px;padding:6px 16px;
   font-size:.73rem;font-weight:700;white-space:nowrap;pointer-events:none;display:none;
   backdrop-filter:blur(4px);}
 .map-zoom-wrap.pick-mode{cursor:crosshair;}
-.map-zoom-wrap.pick-mode #mapIframe{pointer-events:none;}
 
 /* ── MODE TOGGLE ── */
 .mode-toggle{display:flex;background:rgba(0,0,0,0.20);border-radius:8px;padding:3px;gap:2px;z-index:15;margin:0 auto;}
@@ -3600,41 +3599,56 @@ function _awClose() {
 
 // ── Map pick mode ──
 function _awPickStart() {
-  // Close popover first
+  // Close popover
   document.getElementById('addWptPopover').classList.remove('open');
-  const wrap   = document.getElementById('mapZoomWrap');
-  const banner = document.getElementById('mapPickBanner');
-  if (wrap)   wrap.classList.add('pick-mode');
-  if (banner) banner.style.display = 'block';
-  // Defer listener so the button click that triggered this doesn't immediately fire it
+  const overlay = document.getElementById('mapPickOverlay');
+  const banner  = document.getElementById('mapPickBanner');
+  const wrap    = document.getElementById('mapZoomWrap');
+  if (wrap)    wrap.classList.add('pick-mode');
+  if (banner)  banner.style.display = 'block';
+  if (!overlay) return;
+
+  // Show overlay so it intercepts clicks (not pointer-events:none)
+  overlay.style.display = 'block';
+
+  // Forward scroll/wheel events through to the iframe underneath so zoom still works
+  overlay._wheelHandler = function(e) {
+    e.preventDefault();
+    const iframe = document.getElementById('mapIframe');
+    if (!iframe) return;
+    // Reload map at new zoom level using our zoom state
+    if (e.deltaY < 0 && _mapZoom < 20) { _mapZoom++; applyMapZoom(); }
+    else if (e.deltaY > 0 && _mapZoom > 2) { _mapZoom--; applyMapZoom(); }
+  };
+  overlay.addEventListener('wheel', overlay._wheelHandler, { passive: false });
+
+  // Defer click listener slightly so the triggering click doesn't fire it
   setTimeout(() => {
-    if (!wrap) return;
-    wrap._awPickHandler = function(e) {
-      const rect   = wrap.getBoundingClientRect();
-      const iframe = document.getElementById('mapIframe');
-      const iRect  = iframe ? iframe.getBoundingClientRect() : rect;
+    overlay._clickHandler = function(e) {
+      e.stopPropagation();
+      const rect   = overlay.getBoundingClientRect();
       const coords = _awPixelToLatLon(
-        e.clientX - iRect.left, e.clientY - iRect.top,
-        iRect.width, iRect.height
+        e.clientX - rect.left, e.clientY - rect.top,
+        rect.width, rect.height
       );
       _awPickCancel();
       _awShowStep2(coords ? coords.lat : null, coords ? coords.lon : null);
       document.getElementById('addWptPopover').classList.add('open');
     };
-    wrap.addEventListener('click', wrap._awPickHandler, { once: true });
+    overlay.addEventListener('click', overlay._clickHandler, { once: true });
   }, 50);
 }
 
 function _awPickCancel() {
-  const wrap   = document.getElementById('mapZoomWrap');
-  const banner = document.getElementById('mapPickBanner');
-  if (wrap) {
-    wrap.classList.remove('pick-mode');
-    if (wrap._awPickHandler) {
-      wrap.removeEventListener('click', wrap._awPickHandler);
-      wrap._awPickHandler = null;
-    }
+  const overlay = document.getElementById('mapPickOverlay');
+  const banner  = document.getElementById('mapPickBanner');
+  const wrap    = document.getElementById('mapZoomWrap');
+  if (overlay) {
+    overlay.style.display = 'none';
+    if (overlay._clickHandler) { overlay.removeEventListener('click', overlay._clickHandler); overlay._clickHandler = null; }
+    if (overlay._wheelHandler) { overlay.removeEventListener('wheel', overlay._wheelHandler); overlay._wheelHandler = null; }
   }
+  if (wrap) { wrap.classList.remove('pick-mode'); }
   if (banner) banner.style.display = 'none';
 }
 
@@ -3686,10 +3700,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('addWptCancelStep2')?.addEventListener('click', _awClose);
   // Close popover on outside click (but not during pick mode)
   document.addEventListener('click', e => {
-    const pop = document.getElementById('addWptPopover');
-    const fab = document.getElementById('addWptFab');
-    const wrap = document.getElementById('mapZoomWrap');
-    if (wrap && wrap.classList.contains('pick-mode')) return; // let pick handler deal with it
+    const pop     = document.getElementById('addWptPopover');
+    const fab     = document.getElementById('addWptFab');
+    const overlay = document.getElementById('mapPickOverlay');
+    if (overlay && overlay.style.display === 'block') return; // pick mode active
     if (pop && pop.classList.contains('open') && !pop.contains(e.target) && e.target !== fab) _awClose();
   });
 
@@ -3710,7 +3724,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Esc cancels pick mode
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && document.getElementById('mapZoomWrap')?.classList.contains('pick-mode')) {
+    if (e.key === 'Escape' && document.getElementById('mapPickOverlay')?.style.display === 'block') {
       _awPickCancel();
     }
   });
