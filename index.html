@@ -466,10 +466,19 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .vtag{position:fixed;bottom:10px;right:14px;font-size:.62rem;font-weight:700;color:rgba(26,95,138,0.45);letter-spacing:0.08em;z-index:50;pointer-events:none;font-family:ui-monospace,'SF Mono','Cascadia Code','Consolas','Menlo',monospace;background:rgba(255,255,255,0.6);padding:2px 7px;border-radius:10px;}
 
 /* ── MAP VIEW TOGGLE ── */
-.map-btn-group{position:absolute;top:10px;right:10px;z-index:1001;display:flex;gap:4px;}
+.map-btn-group{position:absolute;top:10px;right:10px;z-index:1001;display:flex;gap:4px;align-items:flex-start;}
 .map-view-btn{background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);transition:all .14s;white-space:nowrap;line-height:1.3;}
 .map-view-btn:hover{background:#fff;}
 .map-view-btn.mvb-on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.map-base-wrap{position:relative;}
+.map-base-btn{background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);white-space:nowrap;line-height:1.3;display:flex;align-items:center;gap:5px;}
+.map-base-btn:hover{background:#fff;}
+.map-base-btn::after{content:'▾';font-size:.6rem;opacity:.6;}
+.map-base-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1.5px solid rgba(0,0,0,0.15);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.18);min-width:150px;overflow:hidden;z-index:1002;}
+.map-base-menu.open{display:block;}
+.map-base-item{padding:8px 13px;font-size:.72rem;font-weight:600;cursor:pointer;color:#333;display:flex;align-items:center;gap:7px;transition:background .12s;}
+.map-base-item:hover{background:#f0f4ff;}
+.map-base-item.active{background:var(--accent-lt);color:var(--accent);}
 
 /* ── TRACK EDIT TOOLBAR (in-sidebar) ── */
 #trEditBar{display:none;flex-direction:column;gap:0;flex-shrink:0;border-bottom:1px solid var(--border);}
@@ -854,9 +863,17 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div id="trLeafletMap" style="position:absolute;inset:0;width:100%;height:100%;display:none;"></div>
     <canvas id="trLassoCanvas"></canvas>
     <div class="map-btn-group" id="trMapBtnGroup" style="display:none;">
-      <button class="map-view-btn" id="trMapViewBtn" onclick="toggleMapView('trk')">🛰 Satellite</button>
+      <div class="map-base-wrap">
+        <button class="map-base-btn" id="trBaseBtn" onclick="toggleBaseMenu('trk')">🛰 Satellite</button>
+        <div class="map-base-menu" id="trBaseMenu">
+          <div class="map-base-item active" data-base="satellite" onclick="setBaseLayer('satellite','trk')">🛰 Satellite</div>
+          <div class="map-base-item" data-base="terrain" onclick="setBaseLayer('terrain','trk')">🗺 Terrain</div>
+          <div class="map-base-item" data-base="ocean" onclick="setBaseLayer('ocean','trk')">🌊 Ocean Chart</div>
+        </div>
+      </div>
       <button class="map-view-btn mvb-on" id="trLabelsBtn" onclick="toggleLabels('trk')">🏷 Labels</button>
-      <button class="map-view-btn mvb-on" id="trOceanBtn" onclick="toggleOcean('trk')">🌊 Ocean</button>
+      <button class="map-view-btn mvb-on" id="trOceanBtn" onclick="toggleOcean('trk')">🌐 Ocean Names</button>
+      <button class="map-view-btn" id="trSeamarksBtn" onclick="toggleSeamarks('trk')">⚓ Seamarks</button>
     </div>
   </div>
 </div>
@@ -894,9 +911,14 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
     </div>
     <div class="map-btn-group" id="wptMapBtnGroup">
-      <button class="map-view-btn" id="wptMapViewBtn" onclick="toggleMapView('wpt')">🛰 Satellite</button>
+      <div class="map-base-wrap">
+        <button class="map-base-btn" id="wptBaseBtn" onclick="toggleBaseMenu('wpt')">🛰 Satellite</button>
+        <div class="map-base-menu" id="wptBaseMenu">
+          <div class="map-base-item active" data-base="satellite" onclick="setBaseLayer('satellite','wpt')">🛰 Satellite</div>
+          <div class="map-base-item" data-base="terrain" onclick="setBaseLayer('terrain','wpt')">🗺 Terrain</div>
+        </div>
+      </div>
       <button class="map-view-btn mvb-on" id="wptLabelsBtn" onclick="toggleLabels('wpt')">🏷 Labels</button>
-      <button class="map-view-btn" id="wptOceanBtn" style="display:none;" title="Ocean labels not available on Google Maps embed">🌊 Ocean</button>
     </div>
     <div id="mapLinks" style="display:none;position:absolute;bottom:14px;right:12px;z-index:10;"></div>
   </div>
@@ -1293,7 +1315,7 @@ function _showMap(pts){
 
     // Google Maps embed with satellite/hybrid tile, red marker pin, zoom 11 (~20km)
     _mapZoom=11; _mapPts=pts;
-    iframe.src = `https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=${mapView==='satellite'?(labelsOn?'h':'s'):(labelsOn?'m':'p')}&output=embed`;
+    iframe.src = `https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=${mapView==='terrain'?(labelsOn?'m':'p'):(labelsOn?'h':'s')}&output=embed`;
 
     links.style.display='block';
     const gmUrl=`https://www.google.com/maps/search/?api=1&query=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
@@ -1307,7 +1329,7 @@ function _showMap(pts){
     hsub.textContent = 'Click a row for individual detail';
 
     _mapZoom=11; _mapPts=pts;
-    iframe.src = `https://maps.google.com/maps?q=${cLat},${cLon}&z=${_mapZoom}&t=${mapView==='satellite'?(labelsOn?'h':'s'):(labelsOn?'m':'p')}&output=embed`;
+    iframe.src = `https://maps.google.com/maps?q=${cLat},${cLon}&z=${_mapZoom}&t=${mapView==='terrain'?(labelsOn?'m':'p'):(labelsOn?'h':'s')}&output=embed`;
 
     links.style.display='block';
     const gmUrl=`https://www.google.com/maps/search/?api=1&query=${cLat},${cLon}`;
@@ -2687,40 +2709,72 @@ if('serviceWorker' in navigator){
 let appMode = 'waypoint';
 let mapView = 'satellite'; // 'satellite' | 'terrain'
 
-function toggleMapView(which) {
-  mapView = mapView === 'satellite' ? 'terrain' : 'satellite';
-  const isSat = mapView === 'satellite';
-  const label = isSat ? '🛰 Satellite' : '🗺 Terrain';
-  const wb = document.getElementById('wptMapViewBtn');
-  const tb = document.getElementById('trMapViewBtn');
-  if(wb) wb.textContent = label;
-  if(tb) tb.textContent = label;
-  if(which === 'wpt' && _mapPts && _mapPts.length) _showMap(_mapPts);
-  if(which === 'trk') trSetTileLayer(mapView === 'satellite');
+let labelsOn   = true;   // places/boundaries labels on by default
+let oceanOn    = true;   // ocean names overlay on by default
+let seamarksOn = false;  // seamarks off by default
+
+const BASE_LABELS = { satellite:'🛰 Satellite', terrain:'🗺 Terrain', ocean:'🌊 Ocean Chart' };
+
+function toggleBaseMenu(which) {
+  const menuId = which === 'wpt' ? 'wptBaseMenu' : 'trBaseMenu';
+  const menu = document.getElementById(menuId);
+  if (!menu) return;
+  // Close other open menus first
+  document.querySelectorAll('.map-base-menu.open').forEach(m => { if(m.id !== menuId) m.classList.remove('open'); });
+  menu.classList.toggle('open');
 }
 
-let labelsOn = true;  // places/boundaries labels on by default
-let oceanOn  = true;  // ocean/reef labels on by default
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.map-base-wrap')) {
+    document.querySelectorAll('.map-base-menu.open').forEach(m => m.classList.remove('open'));
+  }
+});
 
-function toggleOcean(which) {
-  oceanOn = !oceanOn;
-  ['trOceanBtn'].forEach(id => {
-    const b = document.getElementById(id);
-    if(b) b.classList.toggle('mvb-on', oceanOn);
+function setBaseLayer(base, which) {
+  mapView = base;
+  // Update dropdown button label
+  const btnId = which === 'wpt' ? 'wptBaseBtn' : 'trBaseBtn';
+  const btn = document.getElementById(btnId);
+  if (btn) btn.textContent = BASE_LABELS[base];
+  // Update active state in menu items
+  const menuId = which === 'wpt' ? 'wptBaseMenu' : 'trBaseMenu';
+  document.querySelectorAll('#'+menuId+' .map-base-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.base === base);
   });
-  if(which === 'trk') trSetTileLayer(mapView === 'satellite');
+  // Close menu
+  document.getElementById(menuId)?.classList.remove('open');
+  // Refresh map
+  if (which === 'wpt' && _mapPts && _mapPts.length) _showMap(_mapPts);
+  if (which === 'trk') trApplyLayers();
 }
 
 function toggleLabels(which) {
   labelsOn = !labelsOn;
-  // Update both label buttons
   ['wptLabelsBtn','trLabelsBtn'].forEach(id => {
     const b = document.getElementById(id);
     if(b) b.classList.toggle('mvb-on', labelsOn);
   });
   if(which === 'wpt' && _mapPts && _mapPts.length) _showMap(_mapPts);
-  if(which === 'trk') trSetTileLayer(mapView === 'satellite');
+  if(which === 'trk') trApplyLayers();
 }
+
+function toggleOcean(which) {
+  oceanOn = !oceanOn;
+  const b = document.getElementById('trOceanBtn');
+  if(b) b.classList.toggle('mvb-on', oceanOn);
+  if(which === 'trk') trApplyLayers();
+}
+
+function toggleSeamarks(which) {
+  seamarksOn = !seamarksOn;
+  const b = document.getElementById('trSeamarksBtn');
+  if(b) b.classList.toggle('mvb-on', seamarksOn);
+  if(which === 'trk') trApplyLayers();
+}
+
+// Legacy wrapper kept for any callers
+function toggleMapView(which) { setBaseLayer(mapView === 'satellite' ? 'terrain' : 'satellite', which); }
 
 let TRACKS = [];
 let DELETED_TRACK_SEGS = []; // segments removed during point editing — go to binned file
@@ -2898,9 +2952,12 @@ let _trLayers = [];        // current polyline layers
 let _trTileLayer  = null;  // current base tile layer
 let _trSatLayer   = null;  // Esri satellite
 let _trOsmLayer   = null;  // OSM standard (with labels)
-let _trLabelLayer = null;  // Esri places/boundaries label overlay
-let _trOceanLayer = null;  // Esri ocean reference (reef names etc)
-let _trOsmNlLayer = null;  // CARTO no-labels (for terrain no-labels)
+let _trLabelLayer     = null;  // Esri places/boundaries label overlay
+let _trOceanLayer     = null;  // Esri ocean reference (reef names etc)
+let _trOsmNlLayer     = null;  // CARTO no-labels (for terrain no-labels)
+let _trOceanBaseLayer = null;  // Esri Ocean Chart base map
+let _trSeamarkLayer   = null;  // OpenSeaMap seamark overlay
+// seamarksOn declared above
 
 const TR_OSM_URL   = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TR_OSM_ATTR  = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
@@ -2910,8 +2967,12 @@ const TR_LBL_URL   = 'https://services.arcgisonline.com/ArcGIS/rest/services/Ref
 const TR_LBL_ATTR  = '© <a href="https://www.esri.com">Esri</a>';
 const TR_OCN_URL   = 'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}';
 const TR_OCN_ATTR  = '© <a href="https://www.esri.com">Esri</a>, GEBCO, NOAA, National Geographic';
-const TR_OSM_NL_URL = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
+const TR_OSM_NL_URL  = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
 const TR_OSM_NL_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>';
+const TR_OCEAN_BASE_URL  = 'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}';
+const TR_OCEAN_BASE_ATTR = 'Tiles © Esri — Source: Esri, GEBCO, NOAA, National Geographic, DeLorme, HERE, Geonames.org';
+const TR_SEAMARK_URL  = 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png';
+const TR_SEAMARK_ATTR = 'Map data: © <a href="https://www.openseamap.org">OpenSeaMap</a> contributors';
 
 function trInitMap() {
   if (_trMap) return;
@@ -2921,43 +2982,52 @@ function trInitMap() {
   _trOsmLayer   = L.tileLayer(TR_OSM_URL,    { attribution: TR_OSM_ATTR,  maxZoom: 19 });
   _trSatLayer   = L.tileLayer(TR_SAT_URL,    { attribution: TR_SAT_ATTR,  maxZoom: 19 });
   _trLabelLayer = L.tileLayer(TR_LBL_URL, { attribution: TR_LBL_ATTR, maxZoom: 19, pane: 'overlayPane' });
-  _trOceanLayer = L.tileLayer(TR_OCN_URL, { attribution: TR_OCN_ATTR, maxZoom: 19, pane: 'overlayPane', opacity: 0.9 });
+  _trOceanLayer     = L.tileLayer(TR_OCN_URL,        { attribution: TR_OCN_ATTR,        maxZoom: 19, pane: 'overlayPane', opacity: 0.9 });
+  _trOceanBaseLayer = L.tileLayer(TR_OCEAN_BASE_URL, { attribution: TR_OCEAN_BASE_ATTR, maxZoom: 19 });
+  _trSeamarkLayer   = L.tileLayer(TR_SEAMARK_URL,    { attribution: TR_SEAMARK_ATTR,    maxZoom: 18, pane: 'overlayPane', opacity: 0.9 });
   _trOsmNlLayer = L.tileLayer(TR_OSM_NL_URL, { attribution: TR_OSM_NL_ATTR, maxZoom: 19 });
-  _trTileLayer  = (mapView === 'satellite' ? _trSatLayer : _trOsmLayer);
-  _trTileLayer.addTo(_trMap);
-  if(labelsOn && mapView === 'satellite') _trLabelLayer.addTo(_trMap);
-  if(oceanOn)  _trOceanLayer.addTo(_trMap);
+  // Apply layers based on current state
+  _trTileLayer = _trSatLayer; // temp assignment so trApplyLayers can remove it
+  trApplyLayers();
 }
 
-function trSetTileLayer(sat) {
+function trApplyLayers() {
   if (!_trMap) return;
-  // Remove current base layer
-  if (_trTileLayer) _trMap.removeLayer(_trTileLayer);
-  // Remove label overlay
-  if (_trLabelLayer && _trMap.hasLayer(_trLabelLayer)) _trMap.removeLayer(_trLabelLayer);
-  if (_trOceanLayer  && _trMap.hasLayer(_trOceanLayer))  _trMap.removeLayer(_trOceanLayer);
-  if (_trOsmNlLayer && _trMap.hasLayer(_trOsmNlLayer)) _trMap.removeLayer(_trOsmNlLayer);
+  // Remove all base layers
+  [_trTileLayer, _trOsmLayer, _trSatLayer, _trOceanBaseLayer, _trOsmNlLayer].forEach(l => {
+    if (l && _trMap.hasLayer(l)) _trMap.removeLayer(l);
+  });
+  // Remove all overlay layers
+  [_trLabelLayer, _trOceanLayer, _trSeamarkLayer].forEach(l => {
+    if (l && _trMap.hasLayer(l)) _trMap.removeLayer(l);
+  });
 
-  if (sat) {
-    // Satellite base
+  // Add chosen base layer
+  if (mapView === 'satellite') {
     _trSatLayer.addTo(_trMap);
     _trTileLayer = _trSatLayer;
-    // Label overlays on top
-    if (labelsOn) _trLabelLayer.addTo(_trMap);
-    if (oceanOn)  _trOceanLayer.addTo(_trMap);
+  } else if (mapView === 'ocean') {
+    _trOceanBaseLayer.addTo(_trMap);
+    _trTileLayer = _trOceanBaseLayer;
   } else {
-    // Terrain/OSM — use label or no-label variant
+    // terrain — with or without labels
     if (labelsOn) {
-      _trOsmLayer.addTo(_trMap);    // OSM has labels baked in
+      _trOsmLayer.addTo(_trMap);
       _trTileLayer = _trOsmLayer;
     } else {
-      _trOsmNlLayer.addTo(_trMap);  // CARTO no-labels
+      _trOsmNlLayer.addTo(_trMap);
       _trTileLayer = _trOsmNlLayer;
     }
-    // Ocean reference layer works on top of terrain too
-    if (oceanOn && _trOceanLayer) _trOceanLayer.addTo(_trMap);
   }
+
+  // Add overlays on top
+  if (labelsOn && mapView !== 'terrain') _trLabelLayer.addTo(_trMap);
+  if (oceanOn)  _trOceanLayer.addTo(_trMap);
+  if (seamarksOn && _trSeamarkLayer) _trSeamarkLayer.addTo(_trMap);
 }
+
+// Legacy wrapper
+function trSetTileLayer(sat) { trApplyLayers(); }
 
 function trDrawMap(tracks) {
   const mapEl = document.getElementById('trLeafletMap');
