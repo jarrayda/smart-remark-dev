@@ -856,19 +856,6 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div class="map-btn-group" id="trMapBtnGroup" style="display:none;">
       <button class="map-view-btn mvb-on" id="trMapViewBtn" onclick="toggleMapView('trk')">🛰 Satellite</button>
     </div>
-          <div class="map-dd-section">
-            <div class="map-dd-label">Bathymetry</div>
-            <div class="map-dd-item" data-layer="esri_ocean"  onclick="setMapBase('esri_ocean','trk')"><span class="dd-check">✓</span>🌊 Esri Ocean</div>
-            <div class="map-dd-item" data-layer="emodnet"     onclick="setMapBase('emodnet','trk')"><span class="dd-check">✓</span>🌊 EMODnet Bathymetry</div>
-            <div class="map-dd-item" data-layer="noaa_ncei"   onclick="setMapBase('noaa_ncei','trk')"><span class="dd-check">✓</span>🌊 NOAA / GEBCO</div>
-          </div>
-          <div class="map-dd-section">
-            <div class="map-dd-label">Overlays</div>
-            <div class="map-dd-item" id="trSeamarkItem" data-layer="seamark" onclick="toggleSeamarks('trk')"><span class="dd-check" id="trSeamarkCheck"></span>⚓ OpenSeaMap</div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -899,7 +886,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
   </div>
   <div class="map-zoom-wrap" id="mapZoomWrap" style="display:none;">
     <iframe id="mapIframe" allowfullscreen referrerpolicy="no-referrer-when-downgrade" onerror="document.getElementById('mapOfflineNote').style.display='block'"></iframe>
-  <div id="mapOfflineNote" style="display:none;position:absolute;bottom:50px;left:0;right:0;text-align:center;font-size:.72rem;color:rgba(255,255,255,.7);pointer-events:none;padding:6px;">Map requires internet · coordinates shown below</div>
+    <div id="mapOfflineNote" style="display:none;position:absolute;bottom:50px;left:0;right:0;text-align:center;font-size:.72rem;color:rgba(255,255,255,.7);pointer-events:none;padding:6px;">Map requires internet · coordinates shown below</div>
     <div class="zoom-btns visible" id="zoomBtns">
       <button class="zoom-btn" id="zoomIn"  title="Zoom in">+</button>
       <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
@@ -907,13 +894,9 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div class="map-btn-group" id="wptMapBtnGroup">
       <button class="map-view-btn mvb-on" id="wptMapViewBtn" onclick="toggleMapView('wpt')">🛰 Satellite</button>
     </div>
-        </div>
-      </div>
-    </div>
     <div id="mapLinks" style="display:none;position:absolute;bottom:14px;right:12px;z-index:10;"></div>
   </div>
   <div class="mcoords" id="mcoords" style="display:none"></div>
-</div>
 </div>
 
 <!-- TRACK EXPORT MODAL -->
