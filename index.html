@@ -466,8 +466,10 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .vtag{position:fixed;bottom:10px;right:14px;font-size:.62rem;font-weight:700;color:rgba(26,95,138,0.45);letter-spacing:0.08em;z-index:50;pointer-events:none;font-family:ui-monospace,'SF Mono','Cascadia Code','Consolas','Menlo',monospace;background:rgba(255,255,255,0.6);padding:2px 7px;border-radius:10px;}
 
 /* ── MAP VIEW TOGGLE ── */
-.map-view-btn{position:absolute;top:10px;right:10px;z-index:20;background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);transition:background .14s;white-space:nowrap;line-height:1.3;}
+.map-btn-group{position:absolute;top:10px;right:10px;z-index:20;display:flex;gap:4px;}
+.map-view-btn{background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);transition:all .14s;white-space:nowrap;line-height:1.3;}
 .map-view-btn:hover{background:#fff;}
+.map-view-btn.mvb-on{background:var(--accent);color:#fff;border-color:var(--accent);}
 
 /* ── TRACK EDIT TOOLBAR (in-sidebar) ── */
 #trEditBar{display:none;flex-direction:column;gap:0;flex-shrink:0;border-bottom:1px solid var(--border);}
@@ -497,8 +499,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .tr-dz p{margin:0;line-height:1.5;}
 
 /* ── MAP VIEW TOGGLE ── */
-.map-view-btn{position:absolute;top:10px;right:10px;z-index:20;background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);transition:background .14s;white-space:nowrap;line-height:1.3;}
-.map-view-btn:hover{background:#fff;}
+
 
 /* ── TRACK EDIT TOOLBAR (in-sidebar) ── */
 #trEditBar{display:none;flex-direction:column;gap:0;flex-shrink:0;border-bottom:1px solid var(--border);}
@@ -852,7 +853,10 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     </div>
     <div id="trLeafletMap" style="position:absolute;inset:0;width:100%;height:100%;display:none;"></div>
     <canvas id="trLassoCanvas"></canvas>
-    <button class="map-view-btn" id="trMapViewBtn" onclick="toggleMapView('trk')" style="display:none;">🛰 Satellite</button>
+    <div class="map-btn-group" id="trMapBtnGroup" style="display:none;">
+      <button class="map-view-btn" id="trMapViewBtn" onclick="toggleMapView('trk')">🛰 Satellite</button>
+      <button class="map-view-btn mvb-on" id="trLabelsBtn" onclick="toggleLabels('trk')">🏷 Labels</button>
+    </div>
   </div>
 </div>
 
@@ -888,7 +892,10 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <button class="zoom-btn" id="zoomIn"  title="Zoom in">+</button>
       <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
     </div>
-    <button class="map-view-btn" id="wptMapViewBtn" onclick="toggleMapView('wpt')" title="Toggle satellite/map view">🛰 Satellite</button>
+    <div class="map-btn-group" id="wptMapBtnGroup">
+      <button class="map-view-btn" id="wptMapViewBtn" onclick="toggleMapView('wpt')">🛰 Satellite</button>
+      <button class="map-view-btn mvb-on" id="wptLabelsBtn" onclick="toggleLabels('wpt')">🏷 Labels</button>
+    </div>
     <div id="mapLinks" style="display:none;position:absolute;bottom:14px;right:12px;z-index:10;"></div>
   </div>
   <div class="mcoords" id="mcoords" style="display:none"></div>
@@ -1284,7 +1291,7 @@ function _showMap(pts){
 
     // Google Maps embed with satellite/hybrid tile, red marker pin, zoom 11 (~20km)
     _mapZoom=11; _mapPts=pts;
-    iframe.src = `https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=${mapView==='satellite'?'h':'m'}&output=embed`;
+    iframe.src = `https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=${mapView==='satellite'?(labelsOn?'h':'s'):(labelsOn?'m':'p')}&output=embed`;
 
     links.style.display='block';
     const gmUrl=`https://www.google.com/maps/search/?api=1&query=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
@@ -1298,7 +1305,7 @@ function _showMap(pts){
     hsub.textContent = 'Click a row for individual detail';
 
     _mapZoom=11; _mapPts=pts;
-    iframe.src = `https://maps.google.com/maps?q=${cLat},${cLon}&z=${_mapZoom}&t=${mapView==='satellite'?'h':'m'}&output=embed`;
+    iframe.src = `https://maps.google.com/maps?q=${cLat},${cLon}&z=${_mapZoom}&t=${mapView==='satellite'?(labelsOn?'h':'s'):(labelsOn?'m':'p')}&output=embed`;
 
     links.style.display='block';
     const gmUrl=`https://www.google.com/maps/search/?api=1&query=${cLat},${cLon}`;
@@ -2346,7 +2353,7 @@ function buildGPX(pts,creator,fmt,tracks){
     const tpts=t.pts.map(p=>`      <trkpt lat="${p.lat.toFixed(8)}" lon="${p.lon.toFixed(8)}"><`+slash+`trkpt>`).join('\n');
     return [
       `  <trk>`,
-      `    <name>${eX(t.name)}<`+slash+`name>`,
+      "<n"+"ame>"+eX(t.name)+"</"+"name>",
       `    <trkseg>`,
       tpts,
       `    <`+slash+`trkseg>`,
@@ -2676,12 +2683,23 @@ function toggleMapView(which) {
   mapView = mapView === 'satellite' ? 'terrain' : 'satellite';
   const isSat = mapView === 'satellite';
   const label = isSat ? '🛰 Satellite' : '🗺 Terrain';
-  // Update both buttons to stay in sync
   const wb = document.getElementById('wptMapViewBtn');
   const tb = document.getElementById('trMapViewBtn');
   if(wb) wb.textContent = label;
   if(tb) tb.textContent = label;
-  // Refresh whichever map is visible
+  if(which === 'wpt' && _mapPts && _mapPts.length) _showMap(_mapPts);
+  if(which === 'trk') trSetTileLayer(mapView === 'satellite');
+}
+
+let labelsOn = true; // labels on by default
+
+function toggleLabels(which) {
+  labelsOn = !labelsOn;
+  // Update both label buttons
+  ['wptLabelsBtn','trLabelsBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.classList.toggle('mvb-on', labelsOn);
+  });
   if(which === 'wpt' && _mapPts && _mapPts.length) _showMap(_mapPts);
   if(which === 'trk') trSetTileLayer(mapView === 'satellite');
 }
@@ -2859,37 +2877,58 @@ function trDeleteSelected() {
 /* ── Leaflet track map ── */
 let _trMap = null;         // Leaflet map instance
 let _trLayers = [];        // current polyline layers
-let _trTileLayer = null;   // current tile layer
-let _trSatLayer = null;    // satellite tile layer ref
-let _trOsmLayer = null;    // OSM tile layer ref
+let _trTileLayer  = null;  // current base tile layer
+let _trSatLayer   = null;  // Esri satellite
+let _trOsmLayer   = null;  // OSM standard (with labels)
+let _trLabelLayer = null;  // Esri label overlay (for satellite mode)
+let _trOsmNlLayer = null;  // CARTO no-labels (for terrain no-labels)
 
 const TR_OSM_URL   = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TR_OSM_ATTR  = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 const TR_SAT_URL   = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const TR_SAT_ATTR  = '© <a href="https://www.esri.com">Esri</a> World Imagery';
+const TR_LBL_URL   = 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+const TR_LBL_ATTR  = '© <a href="https://www.esri.com">Esri</a>';
+const TR_OSM_NL_URL = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
+const TR_OSM_NL_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>';
 
 function trInitMap() {
   if (_trMap) return;
   const el = document.getElementById('trLeafletMap');
   if (!el) return;
   _trMap = L.map('trLeafletMap', { zoomControl: true, attributionControl: true });
-  _trOsmLayer = L.tileLayer(TR_OSM_URL, { attribution: TR_OSM_ATTR, maxZoom: 19 });
-  _trSatLayer = L.tileLayer(TR_SAT_URL, { attribution: TR_SAT_ATTR, maxZoom: 19 });
-  // Start with current mapView setting
-  _trTileLayer = (mapView === 'satellite' ? _trSatLayer : _trOsmLayer);
+  _trOsmLayer   = L.tileLayer(TR_OSM_URL,    { attribution: TR_OSM_ATTR,  maxZoom: 19 });
+  _trSatLayer   = L.tileLayer(TR_SAT_URL,    { attribution: TR_SAT_ATTR,  maxZoom: 19 });
+  _trLabelLayer = L.tileLayer(TR_LBL_URL,    { attribution: TR_LBL_ATTR,  maxZoom: 19, pane: 'overlayPane' });
+  _trOsmNlLayer = L.tileLayer(TR_OSM_NL_URL, { attribution: TR_OSM_NL_ATTR, maxZoom: 19 });
+  _trTileLayer  = (mapView === 'satellite' ? _trSatLayer : _trOsmLayer);
   _trTileLayer.addTo(_trMap);
+  if(labelsOn && mapView === 'satellite') _trLabelLayer.addTo(_trMap);
 }
 
 function trSetTileLayer(sat) {
   if (!_trMap) return;
-  if (sat && _trTileLayer !== _trSatLayer) {
-    _trMap.removeLayer(_trTileLayer);
+  // Remove current base layer
+  if (_trTileLayer) _trMap.removeLayer(_trTileLayer);
+  // Remove label overlay
+  if (_trLabelLayer && _trMap.hasLayer(_trLabelLayer)) _trMap.removeLayer(_trLabelLayer);
+  if (_trOsmNlLayer && _trMap.hasLayer(_trOsmNlLayer)) _trMap.removeLayer(_trOsmNlLayer);
+
+  if (sat) {
+    // Satellite base
     _trSatLayer.addTo(_trMap);
     _trTileLayer = _trSatLayer;
-  } else if (!sat && _trTileLayer !== _trOsmLayer) {
-    _trMap.removeLayer(_trTileLayer);
-    _trOsmLayer.addTo(_trMap);
-    _trTileLayer = _trOsmLayer;
+    // Label overlay on top
+    if (labelsOn) _trLabelLayer.addTo(_trMap);
+  } else {
+    // Terrain/OSM — use label or no-label variant
+    if (labelsOn) {
+      _trOsmLayer.addTo(_trMap);    // OSM has labels baked in
+      _trTileLayer = _trOsmLayer;
+    } else {
+      _trOsmNlLayer.addTo(_trMap);  // CARTO no-labels
+      _trTileLayer = _trOsmNlLayer;
+    }
   }
 }
 
@@ -2899,7 +2938,7 @@ function trDrawMap(tracks) {
 
   if (!tracks.length) {
     if(mapEl) mapEl.style.display = 'none';
-    const vb = document.getElementById('trMapViewBtn');
+    const vb = document.getElementById('trMapBtnGroup');
     if(vb) vb.style.display = 'none';
     empty.style.display = 'flex';
     return;
@@ -2907,8 +2946,8 @@ function trDrawMap(tracks) {
 
   empty.style.display = 'none';
   mapEl.style.display = 'block';
-  const viewBtn = document.getElementById('trMapViewBtn');
-  if(viewBtn) viewBtn.style.display = 'block';
+  const viewBtn = document.getElementById('trMapBtnGroup');
+  if(viewBtn) viewBtn.style.display = 'flex';
 
   // Init Leaflet on first use
   trInitMap();
@@ -2961,18 +3000,18 @@ function trDrawMap(tracks) {
 }
 
 function buildTrackGPX(tracks, creator) {
-  const slash = '/';
+  const s = '/';
   const lines = ['<?xml version="1.0" encoding="UTF-8"?>',
     `<gpx version="1.1" creator="${esc(creator)}" xmlns="http://www.topografix.com/GPX/1/1">`];
   tracks.forEach(t => {
     lines.push(`  <trk>`);
-    lines.push(`    <n>${esc(t._exportName || t.name)}<`+slash+`name>`);
+    lines.push("<n"+"ame>"+esc(t._exportName || t.name)+"</n"+"ame>");
     lines.push(`    <trkseg>`);
-    t.pts.forEach(p => lines.push(`      <trkpt lat="${p.lat.toFixed(8)}" lon="${p.lon.toFixed(8)}"><`+slash+`trkpt>`));
-    lines.push(`    <`+slash+`trkseg>`);
-    lines.push(`  <`+slash+`trk>`);
+    t.pts.forEach(p => lines.push(`      <trkpt lat="${p.lat.toFixed(8)}" lon="${p.lon.toFixed(8)}"><`+s+`trkpt>`));
+    lines.push(`    <`+s+`trkseg>`);
+    lines.push(`  <`+s+`trk>`);
   });
-  lines.push(`<`+slash+`gpx>`);
+  lines.push(`<`+s+`gpx>`);
   return lines.join('\n');
 }
 
