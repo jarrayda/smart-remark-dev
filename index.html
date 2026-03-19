@@ -470,15 +470,20 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 .map-view-btn{background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);transition:all .14s;white-space:nowrap;line-height:1.3;}
 .map-view-btn:hover{background:#fff;}
 .map-view-btn.mvb-on{background:var(--accent);color:#fff;border-color:var(--accent);}
-.map-base-wrap{position:relative;}
-.map-base-btn{background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);white-space:nowrap;line-height:1.3;display:flex;align-items:center;gap:5px;}
-.map-base-btn:hover{background:#fff;}
-.map-base-btn::after{content:'▾';font-size:.6rem;opacity:.6;}
-.map-base-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1.5px solid rgba(0,0,0,0.15);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.18);min-width:150px;overflow:hidden;z-index:1002;}
-.map-base-menu.open{display:block;}
-.map-base-item{padding:8px 13px;font-size:.72rem;font-weight:600;cursor:pointer;color:#333;display:flex;align-items:center;gap:7px;transition:background .12s;}
-.map-base-item:hover{background:#f0f4ff;}
-.map-base-item.active{background:var(--accent-lt);color:var(--accent);}
+.map-dd-wrap{position:relative;}
+.map-dd-btn{background:rgba(255,255,255,0.92);border:1.5px solid rgba(0,0,0,0.18);border-radius:6px;padding:5px 10px 5px 11px;font-size:.69rem;font-weight:700;cursor:pointer;color:#333;box-shadow:0 1px 5px rgba(0,0,0,0.2);white-space:nowrap;line-height:1.3;display:flex;align-items:center;gap:5px;}
+.map-dd-btn:hover{background:#fff;}
+.map-dd-btn::after{content:'▾';font-size:.55rem;opacity:.55;margin-left:2px;}
+.map-dd-menu{display:none;position:absolute;top:calc(100% + 5px);right:0;background:#fff;border:1.5px solid rgba(0,0,0,0.13);border-radius:9px;box-shadow:0 6px 20px rgba(0,0,0,0.16);min-width:180px;overflow:hidden;z-index:1002;}
+.map-dd-menu.open{display:block;}
+.map-dd-section{padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.07);}
+.map-dd-section:last-child{border-bottom:none;}
+.map-dd-label{padding:5px 13px 2px;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#aaa;}
+.map-dd-item{padding:7px 13px;font-size:.72rem;font-weight:600;cursor:pointer;color:#333;display:flex;align-items:center;gap:8px;transition:background .11s;}
+.map-dd-item:hover{background:#f0f5ff;}
+.map-dd-item.active{background:var(--accent-lt);color:var(--accent);}
+.map-dd-item .dd-check{font-size:.7rem;width:12px;opacity:0;}
+.map-dd-item.active .dd-check{opacity:1;}
 
 /* ── TRACK EDIT TOOLBAR (in-sidebar) ── */
 #trEditBar{display:none;flex-direction:column;gap:0;flex-shrink:0;border-bottom:1px solid var(--border);}
@@ -863,17 +868,26 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div id="trLeafletMap" style="position:absolute;inset:0;width:100%;height:100%;display:none;"></div>
     <canvas id="trLassoCanvas"></canvas>
     <div class="map-btn-group" id="trMapBtnGroup" style="display:none;">
-      <div class="map-base-wrap">
-        <button class="map-base-btn" id="trBaseBtn" onclick="toggleBaseMenu('trk')">🛰 Satellite</button>
-        <div class="map-base-menu" id="trBaseMenu">
-          <div class="map-base-item active" data-base="satellite" onclick="setBaseLayer('satellite','trk')">🛰 Satellite</div>
-          <div class="map-base-item" data-base="terrain" onclick="setBaseLayer('terrain','trk')">🗺 Terrain</div>
-          <div class="map-base-item" data-base="ocean" onclick="setBaseLayer('ocean','trk')">🌊 Ocean Chart</div>
+      <div class="map-dd-wrap">
+        <button class="map-dd-btn" id="trDdBtn" onclick="mapDdToggle('trk')">🛰 Satellite</button>
+        <div class="map-dd-menu" id="trDdMenu">
+          <div class="map-dd-section">
+            <div class="map-dd-label">Base Map</div>
+            <div class="map-dd-item active" data-layer="satellite" onclick="setMapBase('satellite','trk')"><span class="dd-check">✓</span>🛰 Satellite</div>
+            <div class="map-dd-item" data-layer="terrain"   onclick="setMapBase('terrain','trk')"><span class="dd-check">✓</span>🗺 Terrain (OSM)</div>
+          </div>
+          <div class="map-dd-section">
+            <div class="map-dd-label">Bathymetry</div>
+            <div class="map-dd-item" data-layer="esri_ocean"  onclick="setMapBase('esri_ocean','trk')"><span class="dd-check">✓</span>🌊 Esri Ocean</div>
+            <div class="map-dd-item" data-layer="emodnet"     onclick="setMapBase('emodnet','trk')"><span class="dd-check">✓</span>🌊 EMODnet Bathymetry</div>
+            <div class="map-dd-item" data-layer="noaa_ncei"   onclick="setMapBase('noaa_ncei','trk')"><span class="dd-check">✓</span>🌊 NOAA / GEBCO</div>
+          </div>
+          <div class="map-dd-section">
+            <div class="map-dd-label">Overlays</div>
+            <div class="map-dd-item" id="trSeamarkItem" data-layer="seamark" onclick="toggleSeamarks('trk')"><span class="dd-check" id="trSeamarkCheck"></span>⚓ OpenSeaMap</div>
+          </div>
         </div>
       </div>
-      <button class="map-view-btn mvb-on" id="trLabelsBtn" onclick="toggleLabels('trk')">🏷 Labels</button>
-      <button class="map-view-btn mvb-on" id="trOceanBtn" onclick="toggleOcean('trk')">🌐 Ocean Names</button>
-      <button class="map-view-btn" id="trSeamarksBtn" onclick="toggleSeamarks('trk')">⚓ Seamarks</button>
     </div>
   </div>
 </div>
@@ -911,14 +925,16 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
     </div>
     <div class="map-btn-group" id="wptMapBtnGroup">
-      <div class="map-base-wrap">
-        <button class="map-base-btn" id="wptBaseBtn" onclick="toggleBaseMenu('wpt')">🛰 Satellite</button>
-        <div class="map-base-menu" id="wptBaseMenu">
-          <div class="map-base-item active" data-base="satellite" onclick="setBaseLayer('satellite','wpt')">🛰 Satellite</div>
-          <div class="map-base-item" data-base="terrain" onclick="setBaseLayer('terrain','wpt')">🗺 Terrain</div>
+      <div class="map-dd-wrap">
+        <button class="map-dd-btn" id="wptDdBtn" onclick="mapDdToggle('wpt')">🛰 Satellite</button>
+        <div class="map-dd-menu" id="wptDdMenu">
+          <div class="map-dd-section">
+            <div class="map-dd-label">Map Type</div>
+            <div class="map-dd-item active" data-layer="satellite" onclick="setMapBase('satellite','wpt')"><span class="dd-check">✓</span>🛰 Satellite</div>
+            <div class="map-dd-item" data-layer="terrain"   onclick="setMapBase('terrain','wpt')"><span class="dd-check">✓</span>🗺 Terrain</div>
+          </div>
         </div>
       </div>
-      <button class="map-view-btn mvb-on" id="wptLabelsBtn" onclick="toggleLabels('wpt')">🏷 Labels</button>
     </div>
     <div id="mapLinks" style="display:none;position:absolute;bottom:14px;right:12px;z-index:10;"></div>
   </div>
@@ -1315,7 +1331,7 @@ function _showMap(pts){
 
     // Google Maps embed with satellite/hybrid tile, red marker pin, zoom 11 (~20km)
     _mapZoom=11; _mapPts=pts;
-    iframe.src = `https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=${mapView==='terrain'?(labelsOn?'m':'p'):(labelsOn?'h':'s')}&output=embed`;
+    iframe.src = `https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=${mapView==='terrain'?'m':'h'}&output=embed`;
 
     links.style.display='block';
     const gmUrl=`https://www.google.com/maps/search/?api=1&query=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
@@ -1329,7 +1345,7 @@ function _showMap(pts){
     hsub.textContent = 'Click a row for individual detail';
 
     _mapZoom=11; _mapPts=pts;
-    iframe.src = `https://maps.google.com/maps?q=${cLat},${cLon}&z=${_mapZoom}&t=${mapView==='terrain'?(labelsOn?'m':'p'):(labelsOn?'h':'s')}&output=embed`;
+    iframe.src = `https://maps.google.com/maps?q=${cLat},${cLon}&z=${_mapZoom}&t=${mapView==='terrain'?'m':'h'}&output=embed`;
 
     links.style.display='block';
     const gmUrl=`https://www.google.com/maps/search/?api=1&query=${cLat},${cLon}`;
@@ -2709,72 +2725,53 @@ if('serviceWorker' in navigator){
 let appMode = 'waypoint';
 let mapView = 'satellite'; // 'satellite' | 'terrain'
 
-let labelsOn   = true;   // places/boundaries labels on by default
-let oceanOn    = true;   // ocean names overlay on by default
-let seamarksOn = false;  // seamarks off by default
+// Close all dropdowns when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.map-dd-wrap'))
+    document.querySelectorAll('.map-dd-menu.open').forEach(m => m.classList.remove('open'));
+});
 
-const BASE_LABELS = { satellite:'🛰 Satellite', terrain:'🗺 Terrain', ocean:'🌊 Ocean Chart' };
-
-function toggleBaseMenu(which) {
-  const menuId = which === 'wpt' ? 'wptBaseMenu' : 'trBaseMenu';
-  const menu = document.getElementById(menuId);
+function mapDdToggle(which) {
+  const id = which === 'wpt' ? 'wptDdMenu' : 'trDdMenu';
+  const menu = document.getElementById(id);
   if (!menu) return;
-  // Close other open menus first
-  document.querySelectorAll('.map-base-menu.open').forEach(m => { if(m.id !== menuId) m.classList.remove('open'); });
+  document.querySelectorAll('.map-dd-menu.open').forEach(m => { if(m.id!==id) m.classList.remove('open'); });
   menu.classList.toggle('open');
 }
 
-// Close dropdown when clicking outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('.map-base-wrap')) {
-    document.querySelectorAll('.map-base-menu.open').forEach(m => m.classList.remove('open'));
-  }
-});
+const MAP_BASE_LABELS = {
+  satellite:  '🛰 Satellite',
+  terrain:    '🗺 Terrain',
+  esri_ocean: '🌊 Esri Ocean',
+  emodnet:    '🌊 EMODnet',
+  noaa_ncei:  '🌊 NOAA/GEBCO'
+};
 
-function setBaseLayer(base, which) {
+function setMapBase(base, which) {
   mapView = base;
-  // Update dropdown button label
-  const btnId = which === 'wpt' ? 'wptBaseBtn' : 'trBaseBtn';
+  const btnId  = which === 'wpt' ? 'wptDdBtn'  : 'trDdBtn';
+  const menuId = which === 'wpt' ? 'wptDdMenu' : 'trDdMenu';
   const btn = document.getElementById(btnId);
-  if (btn) btn.textContent = BASE_LABELS[base];
-  // Update active state in menu items
-  const menuId = which === 'wpt' ? 'wptBaseMenu' : 'trBaseMenu';
-  document.querySelectorAll('#'+menuId+' .map-base-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.base === base);
+  if (btn) btn.childNodes[0].textContent = MAP_BASE_LABELS[base] || base;
+  document.querySelectorAll('#'+menuId+' .map-dd-item[data-layer]').forEach(el => {
+    el.classList.toggle('active', el.dataset.layer === base);
   });
-  // Close menu
   document.getElementById(menuId)?.classList.remove('open');
-  // Refresh map
   if (which === 'wpt' && _mapPts && _mapPts.length) _showMap(_mapPts);
   if (which === 'trk') trApplyLayers();
 }
 
-function toggleLabels(which) {
-  labelsOn = !labelsOn;
-  ['wptLabelsBtn','trLabelsBtn'].forEach(id => {
-    const b = document.getElementById(id);
-    if(b) b.classList.toggle('mvb-on', labelsOn);
-  });
-  if(which === 'wpt' && _mapPts && _mapPts.length) _showMap(_mapPts);
-  if(which === 'trk') trApplyLayers();
-}
-
-function toggleOcean(which) {
-  oceanOn = !oceanOn;
-  const b = document.getElementById('trOceanBtn');
-  if(b) b.classList.toggle('mvb-on', oceanOn);
-  if(which === 'trk') trApplyLayers();
-}
-
 function toggleSeamarks(which) {
   seamarksOn = !seamarksOn;
-  const b = document.getElementById('trSeamarksBtn');
-  if(b) b.classList.toggle('mvb-on', seamarksOn);
-  if(which === 'trk') trApplyLayers();
+  const check = document.getElementById('trSeamarkCheck');
+  if (check) check.textContent = seamarksOn ? '✓' : '';
+  const item = document.getElementById('trSeamarkItem');
+  if (item) item.classList.toggle('active', seamarksOn);
+  if (which === 'trk') trApplyLayers();
 }
 
-// Legacy wrapper kept for any callers
-function toggleMapView(which) { setBaseLayer(mapView === 'satellite' ? 'terrain' : 'satellite', which); }
+// Legacy shim
+function toggleMapView(which) { setMapBase(mapView==='satellite'?'terrain':'satellite', which); }
 
 let TRACKS = [];
 let DELETED_TRACK_SEGS = []; // segments removed during point editing — go to binned file
@@ -2949,42 +2946,43 @@ function trDeleteSelected() {
 /* ── Leaflet track map ── */
 let _trMap = null;         // Leaflet map instance
 let _trLayers = [];        // current polyline layers
-let _trTileLayer  = null;  // current base tile layer
-let _trSatLayer   = null;  // Esri satellite
-let _trOsmLayer   = null;  // OSM standard (with labels)
-let _trLabelLayer     = null;  // Esri places/boundaries label overlay
-let _trOceanLayer     = null;  // Esri ocean reference (reef names etc)
-let _trOsmNlLayer     = null;  // CARTO no-labels (for terrain no-labels)
-let _trOceanBaseLayer = null;  // Esri Ocean Chart base map
-let _trSeamarkLayer   = null;  // OpenSeaMap seamark overlay
-// seamarksOn declared above
+let _trTileLayer    = null;
+let _trSatLayer     = null;  // Esri satellite
+let _trOsmLayer     = null;  // OSM terrain
+let _trEsriOcnLayer = null;  // Esri Ocean Base
+let _trEmodnetLayer = null;  // EMODnet Bathymetry
+let _trNoaaLayer    = null;  // NOAA/GEBCO
+let _trSeamarkLayer = null;  // OpenSeaMap overlay
+let seamarksOn      = false;
 
-const TR_OSM_URL   = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TR_OSM_ATTR  = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-const TR_SAT_URL   = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-const TR_SAT_ATTR  = '© <a href="https://www.esri.com">Esri</a> World Imagery';
-const TR_LBL_URL   = 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
-const TR_LBL_ATTR  = '© <a href="https://www.esri.com">Esri</a>';
-const TR_OCN_URL   = 'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}';
-const TR_OCN_ATTR  = '© <a href="https://www.esri.com">Esri</a>, GEBCO, NOAA, National Geographic';
-const TR_OSM_NL_URL  = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
-const TR_OSM_NL_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>';
-const TR_OCEAN_BASE_URL  = 'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}';
-const TR_OCEAN_BASE_ATTR = 'Tiles © Esri — Source: Esri, GEBCO, NOAA, National Geographic, DeLorme, HERE, Geonames.org';
-const TR_SEAMARK_URL  = 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png';
-const TR_SEAMARK_ATTR = 'Map data: © <a href="https://www.openseamap.org">OpenSeaMap</a> contributors';
+const TR_OSM_URL        = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TR_OSM_ATTR       = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const TR_SAT_URL        = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const TR_SAT_ATTR       = 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics';
+const TR_ESRI_OCN_URL   = 'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}';
+const TR_ESRI_OCN_ATTR  = 'Tiles © Esri — Sources: GEBCO, NOAA, CHS, OSU, UNH, CSUMB, National Geographic, DeLorme, NAVTEQ, and Esri';
+const TR_EMODNET_URL    = 'https://tiles.emodnet-bathymetry.eu/2020/baselayer/web_mercator/{z}/{x}/{y}.png';
+const TR_EMODNET_ATTR   = '© <a href="https://emodnet.ec.europa.eu">EMODnet Bathymetry</a>';
+const TR_NOAA_URL       = 'https://tiles.arcgis.com/tiles/C8EMgrsFcRFL6LrL/arcgis/rest/services/GEBCO_basemap_NCEI/MapServer/tile/{z}/{y}/{x}';
+const TR_NOAA_ATTR      = 'Imagery provided by NOAA NCEI, IBCSO, GEBCO';
+const TR_SEAMARK_URL    = 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png';
+const TR_SEAMARK_ATTR   = 'Map data: © <a href="https://www.openseamap.org">OpenSeaMap</a> contributors';
+
+
+
+
 
 function trInitMap() {
   if (_trMap) return;
   const el = document.getElementById('trLeafletMap');
   if (!el) return;
   _trMap = L.map('trLeafletMap', { zoomControl: true, attributionControl: true });
-  _trOsmLayer   = L.tileLayer(TR_OSM_URL,    { attribution: TR_OSM_ATTR,  maxZoom: 19 });
-  _trSatLayer   = L.tileLayer(TR_SAT_URL,    { attribution: TR_SAT_ATTR,  maxZoom: 19 });
-  _trLabelLayer = L.tileLayer(TR_LBL_URL, { attribution: TR_LBL_ATTR, maxZoom: 19, pane: 'overlayPane' });
-  _trOceanLayer     = L.tileLayer(TR_OCN_URL,        { attribution: TR_OCN_ATTR,        maxZoom: 19, pane: 'overlayPane', opacity: 0.9 });
-  _trOceanBaseLayer = L.tileLayer(TR_OCEAN_BASE_URL, { attribution: TR_OCEAN_BASE_ATTR, maxZoom: 19 });
-  _trSeamarkLayer   = L.tileLayer(TR_SEAMARK_URL,    { attribution: TR_SEAMARK_ATTR,    maxZoom: 18, pane: 'overlayPane', opacity: 0.9 });
+  _trOsmLayer     = L.tileLayer(TR_OSM_URL,      { attribution: TR_OSM_ATTR,      maxZoom: 19 });
+  _trSatLayer     = L.tileLayer(TR_SAT_URL,      { attribution: TR_SAT_ATTR,      maxZoom: 19 });
+  _trEsriOcnLayer = L.tileLayer(TR_ESRI_OCN_URL, { attribution: TR_ESRI_OCN_ATTR, maxZoom: 17 });
+  _trEmodnetLayer = L.tileLayer(TR_EMODNET_URL,  { attribution: TR_EMODNET_ATTR,  maxZoom: 11 });
+  _trNoaaLayer    = L.tileLayer(TR_NOAA_URL,     { attribution: TR_NOAA_ATTR,     maxZoom: 17 });
+  _trSeamarkLayer = L.tileLayer(TR_SEAMARK_URL,  { attribution: TR_SEAMARK_ATTR,  maxZoom: 18, opacity: 0.9 });
   _trOsmNlLayer = L.tileLayer(TR_OSM_NL_URL, { attribution: TR_OSM_NL_ATTR, maxZoom: 19 });
   // Apply layers based on current state
   _trTileLayer = _trSatLayer; // temp assignment so trApplyLayers can remove it
@@ -2994,39 +2992,27 @@ function trInitMap() {
 function trApplyLayers() {
   if (!_trMap) return;
   // Remove all base layers
-  [_trTileLayer, _trOsmLayer, _trSatLayer, _trOceanBaseLayer, _trOsmNlLayer].forEach(l => {
+  [_trTileLayer, _trOsmLayer, _trSatLayer, _trEsriOcnLayer, _trEmodnetLayer, _trNoaaLayer].forEach(l => {
     if (l && _trMap.hasLayer(l)) _trMap.removeLayer(l);
   });
-  // Remove all overlay layers
-  [_trLabelLayer, _trOceanLayer, _trSeamarkLayer].forEach(l => {
-    if (l && _trMap.hasLayer(l)) _trMap.removeLayer(l);
-  });
+  // Remove seamark overlay (re-add below if on)
+  if (_trSeamarkLayer && _trMap.hasLayer(_trSeamarkLayer)) _trMap.removeLayer(_trSeamarkLayer);
 
-  // Add chosen base layer
-  if (mapView === 'satellite') {
-    _trSatLayer.addTo(_trMap);
-    _trTileLayer = _trSatLayer;
-  } else if (mapView === 'ocean') {
-    _trOceanBaseLayer.addTo(_trMap);
-    _trTileLayer = _trOceanBaseLayer;
-  } else {
-    // terrain — with or without labels
-    if (labelsOn) {
-      _trOsmLayer.addTo(_trMap);
-      _trTileLayer = _trOsmLayer;
-    } else {
-      _trOsmNlLayer.addTo(_trMap);
-      _trTileLayer = _trOsmNlLayer;
-    }
-  }
+  const layerMap = {
+    satellite:  _trSatLayer,
+    terrain:    _trOsmLayer,
+    esri_ocean: _trEsriOcnLayer,
+    emodnet:    _trEmodnetLayer,
+    noaa_ncei:  _trNoaaLayer
+  };
+  const chosen = layerMap[mapView] || _trSatLayer;
+  chosen.addTo(_trMap);
+  _trTileLayer = chosen;
 
-  // Add overlays on top
-  if (labelsOn && mapView !== 'terrain') _trLabelLayer.addTo(_trMap);
-  if (oceanOn)  _trOceanLayer.addTo(_trMap);
+  // Seamark overlay on top
   if (seamarksOn && _trSeamarkLayer) _trSeamarkLayer.addTo(_trMap);
 }
 
-// Legacy wrapper
 function trSetTileLayer(sat) { trApplyLayers(); }
 
 function trDrawMap(tracks) {
