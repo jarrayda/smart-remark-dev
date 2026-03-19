@@ -1843,17 +1843,18 @@ function setExact(id,gi){EG[gi].members.forEach(w=>{w.keepInGroup=w.id===id;w.st
 
 // ─── CLEAN PREVIEW ───────────────────────────────────
 function buildClean(){
-  CS=WP.filter(w=>w.status==='ok'||w.status==='keep');
-
-  // Binned = status-flagged dupes PLUS any same-name group members
-  // that are unchecked (snFlag=true means they're in a same-name group,
-  // keepInGroup=false means the user hasn't ticked them to keep)
+  // Build set of same-name group members the user has NOT ticked to keep
   const snUnchecked = new Set();
   SN.forEach(g => {
     g.members.forEach(w => {
       if(!w.keepInGroup) snUnchecked.add(w.id);
     });
   });
+
+  // Clean = ok/keep status AND not in the snUnchecked set
+  CS=WP.filter(w=>(w.status==='ok'||w.status==='keep') && !snUnchecked.has(w.id));
+
+  // Binned = status-flagged dupes PLUS same-name unchecked
   BS=WP.filter(w =>
     w.status==='exact_dupe' ||
     w.status==='near_dupe'  ||
