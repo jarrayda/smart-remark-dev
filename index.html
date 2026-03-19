@@ -286,7 +286,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 /* MAP ZOOM OVERLAY BUTTONS */
 .map-zoom-wrap{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
 .map-zoom-wrap #mapIframe{position:absolute;inset:0;width:100%;height:100%;border:none;}
-.zoom-btns{position:absolute;bottom:14px;left:12px;display:none;flex-direction:column;gap:3px;z-index:10;}
+.zoom-btns{position:absolute;bottom:80px;left:12px;display:none;flex-direction:column;gap:3px;z-index:10;}
 .zoom-btns.visible{display:flex;}
 .zoom-btn{width:30px;height:30px;background:#fff;border:1.5px solid rgba(0,0,0,0.2);border-radius:4px;font-size:1.1rem;font-weight:700;color:#444;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.2);line-height:1;transition:background .12s;}
 .zoom-btn:hover{background:#f0f0f0;}
@@ -453,7 +453,6 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
   .expModal .modal-box{border-radius:18px 18px 0 0;}
 
   /* VTAG */
-  .vtag{font-size:.55rem;max-width:200px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
   /* RELEASE NOTES BTN — icon only on mobile */
   .rn-btn{font-size:.6rem;padding:0 8px;}
   .rn-btn span.rn-label{display:none;}
@@ -463,7 +462,6 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 }
 
 /* VERSION */
-.vtag{position:fixed;bottom:10px;right:14px;font-size:.62rem;font-weight:700;color:rgba(26,95,138,0.45);letter-spacing:0.08em;z-index:50;pointer-events:none;font-family:ui-monospace,'SF Mono','Cascadia Code','Consolas','Menlo',monospace;background:rgba(255,255,255,0.6);padding:2px 7px;border-radius:10px;}
 
 /* ── MAP VIEW TOGGLE ── */
 .map-btn-group{position:absolute;top:10px;right:10px;z-index:1001;display:flex;gap:4px;}
@@ -530,6 +528,17 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
   box-shadow:0 2px 10px rgba(0,0,0,0.25);white-space:nowrap;backdrop-filter:blur(4px);
   transition:background .15s,opacity .15s;display:none;}
 #addWptFab:hover{background:rgba(26,95,138,1);}
+/* Add waypoint popover — anchored above the FAB inside the map panel */
+#addWptPopover{position:absolute;bottom:92px;left:50%;transform:translateX(-50%);
+  z-index:30;width:320px;background:#fff;border-radius:12px;
+  box-shadow:0 6px 28px rgba(0,0,0,0.22);padding:18px 18px 14px;
+  display:none;border:1.5px solid rgba(0,0,0,0.09);}
+#addWptPopover.open{display:block;}
+/* Small caret pointing down toward FAB */
+#addWptPopover::after{content:'';position:absolute;bottom:-8px;left:50%;
+  transform:translateX(-50%);border:8px solid transparent;
+  border-bottom:none;border-top:8px solid #fff;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,0.08));}
 /* Pick-on-map crosshair overlay */
 #mapPickOverlay{position:absolute;inset:0;z-index:25;display:none;cursor:crosshair;pointer-events:none;}
 #mapPickBanner{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:26;
@@ -912,6 +921,57 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     </div>
     <div id="mapLinks" style="display:none;position:absolute;bottom:14px;right:12px;z-index:10;"></div>
     <button id="addWptFab">＋ Add New Waypoint</button>
+
+    <!-- Add Waypoint Popover — anchored above FAB -->
+    <div id="addWptPopover">
+      <!-- Step 1: choose method -->
+      <div id="addWptStep1">
+        <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:12px;text-align:center;">📍 Add New Waypoint</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline" id="addWptChooseCoords" style="flex:1;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:8px;">
+            <span style="font-size:1.2rem">⌨️</span>
+            <strong style="font-size:.75rem">Enter Coords</strong>
+            <span style="font-size:.66rem;color:var(--muted);font-weight:400">Type lat/lon</span>
+          </button>
+          <button class="btn btn-outline" id="addWptChooseMap" style="flex:1;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:8px;">
+            <span style="font-size:1.2rem">🗺️</span>
+            <strong style="font-size:.75rem">Click Map</strong>
+            <span style="font-size:.66rem;color:var(--muted);font-weight:400">Drop pin</span>
+          </button>
+        </div>
+        <button class="btn btn-outline btn-sm" id="addWptCancel" style="width:100%;margin-top:10px;font-size:.72rem;">✕ Cancel</button>
+      </div>
+      <!-- Step 2: enter name + coords -->
+      <div id="addWptStep2" style="display:none;">
+        <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:10px;text-align:center;">📍 New Mark Details</div>
+        <div style="margin-bottom:9px;">
+          <label style="display:block;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Name</label>
+          <input type="text" class="exp-modal-input" id="addWptName" placeholder="e.g. Snapper Hole" maxlength="60" autocomplete="off" style="margin-bottom:0;">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Coordinates</span>
+          <div style="display:flex;background:var(--bg);border:1.5px solid var(--border2);border-radius:20px;padding:2px;gap:2px;">
+            <button id="awFmtDMS" onclick="_awSetFmt('dms')" style="border:none;border-radius:16px;padding:2px 9px;font-size:.65rem;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;transition:all .13s;">DMS</button>
+            <button id="awFmtDD"  onclick="_awSetFmt('dd')"  style="border:none;border-radius:16px;padding:2px 9px;font-size:.65rem;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:all .13s;">DD</button>
+          </div>
+        </div>
+        <div style="margin-bottom:7px;">
+          <label style="display:block;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Lat <span id="awLatHint" style="font-weight:400;text-transform:none;">(23° 26′ 42.0″ S)</span></label>
+          <input type="text" class="exp-modal-input" id="addWptLat" placeholder="23° 26′ 42.0″ S" autocomplete="off" style="margin-bottom:0;font-family:ui-monospace,'SF Mono',monospace;font-size:.8rem;">
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Lon <span id="awLonHint" style="font-weight:400;text-transform:none;">(151° 54′ 48.0″ E)</span></label>
+          <input type="text" class="exp-modal-input" id="addWptLon" placeholder="151° 54′ 48.0″ E" autocomplete="off" style="margin-bottom:0;font-family:ui-monospace,'SF Mono',monospace;font-size:.8rem;">
+        </div>
+        <div id="addWptErr" style="display:none;font-size:.72rem;color:var(--red);margin-bottom:8px;padding:5px 9px;background:rgba(239,68,68,0.08);border-radius:6px;"></div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" id="addWptBack" style="width:auto;font-size:.72rem;">← Back</button>
+          <button class="btn btn-outline btn-sm" id="addWptCancelStep2" style="width:auto;font-size:.72rem;">✕ Cancel</button>
+          <button class="btn btn-green btn-sm" id="addWptOK" style="flex:1;font-size:.72rem;">✓ Add Mark</button>
+        </div>
+      </div>
+    </div>
+
     <div id="mapPickBanner">Click the map to place the mark — or press Esc to cancel</div>
     <div id="mapPickOverlay"></div>
   </div>
@@ -952,7 +1012,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         </svg>
       </div>
       <div>
-        <h2>Welcome to Smart Re-Mark <span style="font-size:.75rem;font-weight:600;opacity:.7;letter-spacing:.02em;">v3.0</span></h2>
+        <h2>Welcome to Smart Re-Mark <span style="font-size:.75rem;font-weight:600;opacity:.7;letter-spacing:.02em;">v3.1</span></h2>
         <p>GPS Waypoint &amp; Track Manager — Deduplicate, Clean, Edit &amp; Export</p>
       </div>
     </div>
@@ -1039,7 +1099,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
     <div class="rn-hdr">
       <div>
         <h3>📋 Release Notes</h3>
-        <p>Smart Re-Mark v3.0 — version history</p>
+        <p>Smart Re-Mark v3.1 — version history</p>
       </div>
       <button class="rn-close" id="rnClose">✕</button>
     </div>
@@ -1047,7 +1107,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
 
       <div class="rn-version">
         <div class="rn-vtag">
-          <span class="rn-vnum">v3.0</span>
+          <span class="rn-vnum">v3.1</span>
           <span class="rn-vdate">Mar 2026</span>
           <span class="rn-vbadge rn-latest">Latest</span>
         </div>
@@ -1359,7 +1419,7 @@ function _showMap(pts){
 function applyMapZoom(){
   if(!_mapPts||!_mapPts.length)return;
   const iframe=document.getElementById('mapIframe');
-  const t=mapView==='satellite'?(labelsOn?'h':'s'):(labelsOn?'m':'p');
+  const t=mapView==='satellite'?'h':'m';
   if(_mapPts.length===1){
     const p=_mapPts[0];
     iframe.src=`https://maps.google.com/maps?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&z=${_mapZoom}&t=${t}&output=embed`;
@@ -2672,13 +2732,9 @@ document.getElementById('expBtn').addEventListener('click',()=>openExportModal()
   </div>
   <div class="load-msg" id="loadMsg">Reading file…</div>
 </div>
-<div class="vtag">v3.0 · 🔒 Offline Safety</div>
 
 <!-- ADD WAYPOINT MODAL -->
-<div class="modal-bg" id="addWptModal">
-  <div class="modal-box" style="max-width:390px">
-    <div class="modal-icon">📍</div>
-    <div class="modal-title">Add New Waypoint</div>
+
 
     <!-- Step 1: choose method -->
     <div id="addWptStep1">
@@ -2726,8 +2782,6 @@ document.getElementById('expBtn').addEventListener('click',()=>openExportModal()
         <button class="btn btn-green btn-sm" id="addWptOK" style="width:auto">✓ Add Mark</button>
       </div>
     </div>
-  </div>
-</div>
 
 </body>
 
@@ -3591,7 +3645,7 @@ function _awReset() {
 }
 
 function _awClose() {
-  document.getElementById('addWptModal').classList.remove('open');
+  document.getElementById('addWptPopover').classList.remove('open');
   _awPickCancel();
   _awReset();
 }
@@ -3599,7 +3653,7 @@ function _awClose() {
 // ── Map pick mode ──
 function _awPickStart() {
   // Close modal, enter pick mode
-  document.getElementById('addWptModal').classList.remove('open');
+  document.getElementById('addWptPopover').classList.remove('open');
   const wrap   = document.getElementById('mapZoomWrap');
   const banner = document.getElementById('mapPickBanner');
   if (wrap)   wrap.classList.add('pick-mode');
@@ -3615,7 +3669,7 @@ function _awPickStart() {
     );
     _awPickCancel();
     _awShowStep2(coords ? coords.lat : null, coords ? coords.lon : null);
-    document.getElementById('addWptModal').classList.add('open');
+    document.getElementById('addWptPopover').classList.add('open');
   };
   wrap.addEventListener('click', wrap._awPickHandler, { once: true });
 }
@@ -3658,7 +3712,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const fab = document.getElementById('addWptFab');
   if (fab) fab.addEventListener('click', () => {
     _awReset();
-    document.getElementById('addWptModal').classList.add('open');
+    document.getElementById('addWptPopover').classList.add('open');
   });
 
   // Step 1 choices
@@ -3673,13 +3727,17 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('addWptBack')?.addEventListener('click', () => {
     document.getElementById('addWptStep1').style.display = 'block';
     document.getElementById('addWptStep2').style.display = 'none';
-    document.getElementById('addWptModal').classList.add('open');
+    document.getElementById('addWptPopover').classList.add('open');
   });
 
   // Cancel
   document.getElementById('addWptCancel')?.addEventListener('click', _awClose);
-  document.getElementById('addWptModal')?.addEventListener('click', e => {
-    if (e.target === document.getElementById('addWptModal')) _awClose();
+  document.getElementById('addWptCancelStep2')?.addEventListener('click', _awClose);
+  // Close popover on outside click
+  document.addEventListener('click', e => {
+    const pop = document.getElementById('addWptPopover');
+    const fab = document.getElementById('addWptFab');
+    if (pop && pop.classList.contains('open') && !pop.contains(e.target) && e.target !== fab) _awClose();
   });
 
   // Save
