@@ -3226,6 +3226,15 @@ function _trSetupLassoCanvas() {
   fresh.addEventListener('touchstart', e => { e.preventDefault(); _lassoDrawing = true; _lassoPath = [getPos(e)]; },                     { passive: false });
   fresh.addEventListener('touchmove',  e => { e.preventDefault(); if (!_lassoDrawing) return; _lassoPath.push(getPos(e)); _trDrawLasso(fresh); }, { passive: false });
   fresh.addEventListener('touchend',   () => { if (!_lassoDrawing) return; _lassoDrawing = false; _trApplyLasso(fresh); });
+  // Ctrl+scroll to zoom while in lasso mode
+  fresh.addEventListener('wheel', e => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    if (_trMap) {
+      if (e.deltaY < 0) _trMap.zoomIn();
+      else _trMap.zoomOut();
+    }
+  }, { passive: false });
   new ResizeObserver(resize).observe(area);
 }
 
