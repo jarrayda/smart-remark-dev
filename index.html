@@ -2733,58 +2733,6 @@ document.getElementById('expBtn').addEventListener('click',()=>openExportModal()
   <div class="load-msg" id="loadMsg">Reading file…</div>
 </div>
 
-<!-- ADD WAYPOINT MODAL -->
-
-
-    <!-- Step 1: choose method -->
-    <div id="addWptStep1">
-      <div class="modal-msg" style="margin-bottom:18px">How would you like to place this mark?</div>
-      <div style="display:flex;gap:12px;justify-content:center;margin-bottom:4px;">
-        <button class="btn btn-outline" id="addWptChooseCoords" style="flex:1;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:10px;">
-          <span style="font-size:1.5rem">⌨️</span>
-          <strong style="font-size:.82rem">Enter Coordinates</strong>
-          <span style="font-size:.7rem;color:var(--muted);font-weight:400">Type lat/lon manually</span>
-        </button>
-        <button class="btn btn-outline" id="addWptChooseMap" style="flex:1;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:10px;">
-          <span style="font-size:1.5rem">🗺️</span>
-          <strong style="font-size:.82rem">Select on Map</strong>
-          <span style="font-size:.7rem;color:var(--muted);font-weight:400">Click to place the pin</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Step 2: enter name + coords -->
-    <div id="addWptStep2" style="display:none;">
-      <div style="margin-bottom:11px;">
-        <label style="display:block;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Mark Name</label>
-        <input type="text" class="exp-modal-input" id="addWptName" placeholder="e.g. Snapper Hole" maxlength="60" autocomplete="off" style="margin-bottom:0;">
-      </div>
-      <!-- Coordinate format toggle -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Coordinates</span>
-        <div style="display:flex;background:var(--bg);border:1.5px solid var(--border2);border-radius:20px;padding:2px;gap:2px;">
-          <button id="awFmtDMS" onclick="_awSetFmt('dms')" style="border:none;border-radius:16px;padding:3px 11px;font-size:.68rem;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;transition:all .13s;">DMS</button>
-          <button id="awFmtDD"  onclick="_awSetFmt('dd')"  style="border:none;border-radius:16px;padding:3px 11px;font-size:.68rem;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);transition:all .13s;">DD</button>
-        </div>
-      </div>
-      <div style="margin-bottom:11px;">
-        <label style="display:block;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Latitude <span id="awLatHint" style="font-weight:400;text-transform:none;">(e.g. 23° 26′ 42.0″ S)</span></label>
-        <input type="text" class="exp-modal-input" id="addWptLat" placeholder="23° 26′ 42.0″ S" autocomplete="off" style="margin-bottom:0;font-family:ui-monospace,'SF Mono',monospace;font-size:.82rem;">
-      </div>
-      <div style="margin-bottom:14px;">
-        <label style="display:block;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Longitude <span id="awLonHint" style="font-weight:400;text-transform:none;">(e.g. 151° 54′ 48.0″ E)</span></label>
-        <input type="text" class="exp-modal-input" id="addWptLon" placeholder="151° 54′ 48.0″ E" autocomplete="off" style="margin-bottom:0;font-family:ui-monospace,'SF Mono',monospace;font-size:.82rem;">
-      </div>
-      <div id="addWptErr" style="display:none;font-size:.75rem;color:var(--red);margin-bottom:10px;padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:6px;"></div>
-      <div class="modal-btns">
-        <button class="btn btn-outline btn-sm" id="addWptBack" style="width:auto">← Back</button>
-        <button class="btn btn-outline btn-sm" id="addWptCancel" style="width:auto">Cancel</button>
-        <button class="btn btn-green btn-sm" id="addWptOK" style="width:auto">✓ Add Mark</button>
-      </div>
-    </div>
-
-</body>
-
 
 <script>
 // ─── SERVICE WORKER (offline support) ────────────────
